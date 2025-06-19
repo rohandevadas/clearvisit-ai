@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Register – ClearVisit AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- PWA Manifest and Meta Tags -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#667eea">
+
+<!-- iOS PWA Support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ClearVisit AI">
+<link rel="apple-touch-icon" href="/heart-icon.png">
+
+<!-- Android PWA Support -->
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Windows PWA Support -->
+<meta name="msapplication-TileColor" content="#667eea">
+<meta name="msapplication-TileImage" content="/heart-icon.png">
+
+<!-- Viewport for mobile -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+</head>
+<body class="bg-gray-100">
+  <!-- Header -->
+  <div class="bg-blue-500 text-white px-6 py-4 flex items-center shadow">
+    <img src="/heart-icon.png" alt="ClearVisit AI" class="w-8 h-8">
+    <span class="text-xl font-semibold">ClearVisit AI</span>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex flex-col items-center justify-center mt-16 px-4">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome to ClearVisit AI</h1>
+    <p class="text-gray-600 mb-8">Record, analyze, and remember your doctor visits</p>
+
+    <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+      <h2 class="text-xl font-semibold mb-4 text-center">Create Account</h2>
+      <p class="text-gray-600 text-sm mb-4 text-center">Enter your information to create a ClearVisit account</p>
+
+      <form id="registerForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Full Name</label>
+          <input type="text" id="name" placeholder="John Doe" required class="w-full px-4 py-2 border rounded-lg" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Email</label>
+          <input type="email" id="email" placeholder="name@example.com" required class="w-full px-4 py-2 border rounded-lg" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Password</label>
+          <input type="password" id="password" required class="w-full px-4 py-2 border rounded-lg" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Confirm Password</label>
+          <input type="password" id="confirmPassword" required class="w-full px-4 py-2 border rounded-lg" />
+        </div>
+        <button class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">Create Account</button>
+      </form>
+
+      <p class="text-sm text-center mt-4 text-blue-600">
+        Already have an account?
+        <a href="login.html" class="underline font-medium">Sign in</a>
+      </p>
+      <p id="message" class="text-center text-red-600 mt-2 text-sm"></p>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+  
+      const name = document.getElementById("name").value.trim(); // Optional
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+      const message = document.getElementById("message");
+  
+      if (password !== confirmPassword) {
+        message.textContent = "Passwords do not match.";
+        return;
+      }
+  
+      try {
+        const res = await fetch("http://localhost:5000/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+  
+        const data = await res.json();
+  
+        if (res.ok) {
+          localStorage.setItem("token", data.token);         
+          localStorage.setItem("userEmail", email);          
+          window.location.href = "dashboard.html";          
+        } else {
+          message.textContent = data.message || "Registration failed.";
+        }
+      } catch (err) {
+        message.textContent = "Server error.";
+      }
+    });
+  </script>
+  <!-- PWA Service Worker Registration -->
+<script>
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('✅ SW registered: ', registration);
+        })
+        .catch((registrationError) => {
+          console.log('❌ SW registration failed: ', registrationError);
+        });
+    });
+  }
+
+  // Handle install prompt
+  let deferredPrompt;
+  
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    console.log('💾 Install prompt ready');
+    
+    // Optionally show your own install button
+    showInstallButton();
+  });
+  
+  function showInstallButton() {
+    // You can create a custom install button here
+    console.log('📱 App can be installed!');
+  }
+  
+  window.addEventListener('appinstalled', (evt) => {
+    console.log('🎉 App was installed successfully!');
+  });
+</script>
+</body>
+</html>

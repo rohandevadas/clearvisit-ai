@@ -1,0 +1,55 @@
+{
+  "name": "ClearVisit AI - Your Health Companion",
+  "short_name": "ClearVisit",
+  "description": "Record, analyze, and remember your doctor visits with AI-powered transcription and intelligent insights.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#667eea",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["health", "medical", "productivity", "lifestyle"],
+  "icons": [
+    {
+      "src": "/heart-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/heart-icon.png",
+      "sizes": "512x512", 
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Appointment",
+      "short_name": "New Visit",
+      "description": "Schedule a new medical appointment",
+      "url": "/dashboard.html",
+      "icons": [
+        {
+          "src": "/heart-icon.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Medical Profile", 
+      "short_name": "Profile",
+      "description": "View and edit your medical profile",
+      "url": "/profile.html",
+      "icons": [
+        {
+          "src": "/heart-icon.png", 
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

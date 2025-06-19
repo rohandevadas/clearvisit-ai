@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard – ClearVisit AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- PWA Manifest and Meta Tags -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#667eea">
+
+<!-- iOS PWA Support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ClearVisit AI">
+<link rel="apple-touch-icon" href="/heart-icon.png">
+
+<!-- Android PWA Support -->
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Windows PWA Support -->
+<meta name="msapplication-TileColor" content="#667eea">
+<meta name="msapplication-TileImage" content="/heart-icon.png">
+
+<!-- Viewport for mobile -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<style>
+  /* Add to your existing <style> section in dashboard.html */
+  @media (max-width: 640px) {
+    .max-w-6xl {
+      max-width: 100%;
+      padding: 0 1rem;
+    }
+    
+    .grid.md\\:grid-cols-2 {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    .text-2xl {
+      font-size: 1.25rem;
+    }
+    
+    .text-5xl {
+      font-size: 2rem;
+    }
+  }
+</style>
+</head>
+<body class="bg-gray-100">
+
+  <!-- Header -->
+  <div class="bg-blue-500 text-white px-4 py-4 shadow">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="flex items-center space-x-2"> 
+      <img width = "100" src="/heart-icon.png">
+      <span class="text-xl font-semibold">ClearVisit AI</span>
+    </div>
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+      <span id="userEmail" class="text-sm truncate max-w-48"></span>
+      <button onclick="logout()" class="border border-white px-3 py-2 rounded hover:bg-blue-600 text-sm w-full sm:w-auto">
+        Logout
+      </button>
+    </div>
+  </div>
+</div>
+
+  <!-- Content -->
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    <div class="flex flex-wrap items-center justify-between mb-6 gap-2">
+      <h1 class="text-2xl font-bold text-gray-800">My Appointments</h1>
+      <div class="flex gap-2">
+        <button onclick="openModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          + New Appointment
+        </button>
+        <a href="/profile.html" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+          View Medical Profile
+        </a>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Upcoming Appointments -->
+      <div class="bg-white rounded-lg p-6 min-h-[200px] shadow">
+        <h2 class="text-lg font-semibold mb-4">Upcoming Appointments</h2>
+        <div id="upcomingAppointments" class="space-y-4 text-gray-800"></div>
+      </div>
+
+      <!-- Previous Appointments -->
+      <div class="bg-white rounded-lg p-6 min-h-[200px] shadow">
+        <h2 class="text-lg font-semibold mb-4">Previous Appointments</h2>
+        <div id="pastAppointments" class="space-y-4 text-gray-800"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center py-6 text-gray-500 text-sm">
+    © 2025 ClearVisit AI. All rights reserved.
+  </footer>
+
+  <!-- Appointment Modal -->
+  <div id="appointmentModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden z-50 overflow-y-auto">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-2xl p-8 m-4">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Create New Appointment</h2>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+      </div>
+
+      <form id="appointmentForm" class="space-y-4">
+        <div>
+          <label class="block font-semibold mb-1">Doctor's Name</label>
+          <input type="text" id="doctor" placeholder="Dr. John Smith" required class="w-full border rounded px-4 py-2" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold mb-1">Date</label>
+            <input type="date" id="date" required class="w-full border rounded px-4 py-2" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Time</label>
+            <input type="time" id="time" required class="w-full border rounded px-4 py-2" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1">Reason for Visit</label>
+          <textarea id="reason" placeholder="Describe the reason for your appointment" class="w-full border rounded px-4 py-2" rows="3"></textarea>
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1">Goal for Visit</label>
+          <textarea id="goal" placeholder="What do you hope to achieve with this appointment?" class="w-full border rounded px-4 py-2" rows="3"></textarea>
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1">Symptoms (optional)</label>
+          <textarea id="symptoms" placeholder="List any symptoms you're experiencing" class="w-full border rounded px-4 py-2" rows="3"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded hover:bg-gray-100">Cancel</button>
+          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Create Appointment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Check authentication
+    if (!localStorage.getItem("token")) {
+      window.location.href = "/login.html";
+    }
+
+    // Show user email
+    const userEmail = localStorage.getItem("userEmail");
+    if (userEmail) {
+      document.getElementById("userEmail").textContent = `Welcome, ${userEmail}`;
+    }
+
+    // Logout functionality
+    function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userEmail");
+      window.location.href = "/login.html";
+    }
+
+    function openModal() {
+      document.getElementById("appointmentModal").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("appointmentModal").classList.add("hidden");
+      document.getElementById("appointmentForm").reset();
+    }
+
+    // Create appointment
+    document.getElementById("appointmentForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const doctor = document.getElementById("doctor").value;
+      const date = document.getElementById("date").value;
+      const time = document.getElementById("time").value;
+      const reason = document.getElementById("reason").value;
+      const goal = document.getElementById("goal").value;
+      const symptoms = document.getElementById("symptoms").value;
+
+      // Merge date + time into one ISO string
+      const fullDateTime = new Date(`${date}T${time}`);
+
+      try {
+        const res = await fetch("/api/appointments", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: localStorage.getItem("token")
+          },
+          body: JSON.stringify({ doctor, date: fullDateTime, reason, goal, symptoms })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          closeModal();
+          loadAppointments(); // Reload appointments instead of full page reload
+        } else {
+          alert("Error: " + (data.message || "Failed to create appointment."));
+        }
+      } catch (err) {
+        alert("Server error.");
+        console.error(err);
+      }
+    });
+
+    // Load and display appointments
+    async function loadAppointments() {
+      const token = localStorage.getItem("token");
+      const upcomingContainer = document.getElementById("upcomingAppointments");
+      const pastContainer = document.getElementById("pastAppointments");
+
+      try {
+        const res = await fetch("/api/appointments", {
+          headers: { Authorization: token }
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const appointments = await res.json();
+        const now = new Date();
+
+        const upcoming = appointments.filter(app => new Date(app.date) > now);
+        const past = appointments.filter(app => new Date(app.date) <= now);
+
+        // Clear containers
+        upcomingContainer.innerHTML = '';
+        pastContainer.innerHTML = '';
+
+        if (upcoming.length === 0) {
+          upcomingContainer.innerHTML = `<p class="text-gray-500">No upcoming appointments</p>`;
+        } else {
+          upcoming.forEach(app => upcomingContainer.appendChild(renderCard(app)));
+        }
+
+        if (past.length === 0) {
+          pastContainer.innerHTML = `<p class="text-gray-500">No previous appointments</p>`;
+        } else {
+          past.forEach(app => pastContainer.appendChild(renderCard(app)));
+        }
+
+      } catch (err) {
+        console.error("❌ Error loading appointments:", err);
+        upcomingContainer.innerHTML = `<p class="text-red-500">Error loading upcoming appointments</p>`;
+        pastContainer.innerHTML = `<p class="text-red-500">Error loading past appointments</p>`;
+      }
+    }
+
+    function renderCard(app) {
+      const dateObj = new Date(app.date);
+      const dateStr = dateObj.toLocaleDateString();
+      const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const card = document.createElement("div");
+      card.className = "border p-4 rounded bg-gray-50 shadow-sm";
+
+      card.innerHTML = `
+        <h3 class="text-lg font-bold mb-1">Dr. ${app.doctor}</h3>
+        <p class="text-sm text-gray-500 mb-2">📅 ${dateStr} at ${timeStr}</p>
+        <p class="text-sm"><strong>Reason:</strong> ${app.reason || 'N/A'}</p>
+        <p class="text-sm"><strong>Goal:</strong> ${app.goal || 'N/A'}</p>
+        <div class="flex justify-between items-center mt-4">
+          <button onclick="deleteAppointment('${app._id}')" class="text-red-500 border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-1 rounded">Delete</button>
+          <button onclick="goToVisit('${app._id}')" class="bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600 flex items-center gap-1">
+            Go to Visit →
+          </button>
+        </div>
+      `;
+      return card;
+    }
+
+    // Delete appointment
+    async function deleteAppointment(id) {
+      const token = localStorage.getItem("token");
+      if (!confirm("Are you sure you want to delete this appointment?")) return;
+
+      try {
+        const res = await fetch(`/api/appointments/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: token }
+        });
+
+        if (res.ok) {
+          loadAppointments(); // Reload appointments
+        } else {
+          alert("Failed to delete appointment");
+        }
+      } catch (err) {
+        console.error("❌ Delete error:", err);
+        alert("Server error");
+      }
+    }
+
+    function goToVisit(id) {
+      window.location.href = `/visit.html?id=${id}`;
+    }
+
+    // Load appointments on page load
+    document.addEventListener("DOMContentLoaded", loadAppointments);
+  </script>
+
+  <!-- PWA Service Worker Registration -->
+<script>
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('✅ SW registered: ', registration);
+        })
+        .catch((registrationError) => {
+          console.log('❌ SW registration failed: ', registrationError);
+        });
+    });
+  }
+
+  // Handle install prompt
+  let deferredPrompt;
+  
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    console.log('💾 Install prompt ready');
+    
+    // Optionally show your own install button
+    showInstallButton();
+  });
+  
+  function showInstallButton() {
+    // You can create a custom install button here
+    console.log('📱 App can be installed!');
+  }
+  
+  window.addEventListener('appinstalled', (evt) => {
+    console.log('🎉 App was installed successfully!');
+  });
+</script>
+
+</body>
+</html>

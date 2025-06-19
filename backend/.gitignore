@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Environment variables (IMPORTANT - don't share API keys!)
+.env
+backend/.env
+
+# Logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# Uploads and temp files
+uploads/
+temp/
+
+# OS generated files
+.DS_Store
+Thumbs.db

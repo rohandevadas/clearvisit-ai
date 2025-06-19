@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Medical Profile – ClearVisit AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- PWA Manifest and Meta Tags -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#667eea">
+
+<!-- iOS PWA Support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ClearVisit AI">
+<link rel="apple-touch-icon" href="/heart-icon.png">
+
+<!-- Android PWA Support -->
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Windows PWA Support -->
+<meta name="msapplication-TileColor" content="#667eea">
+<meta name="msapplication-TileImage" content="/heart-icon.png">
+
+<!-- Viewport for mobile -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+</head>
+<body class="bg-gray-100">
+
+  <!-- Header -->
+  <div class="bg-blue-500 text-white flex items-center justify-between px-6 py-4 shadow">
+    <div class="flex items-center space-x-2">
+      <img src="/heart-icon.png" alt="ClearVisit AI" class="w-8 h-8">
+      <span class="text-xl font-semibold">ClearVisit AI</span>
+    </div>
+    <div class="flex items-center space-x-4">
+      <a href="/dashboard.html" class="underline text-sm">Back to Dashboard</a>
+      <button onclick="logout()" class="border border-white px-3 py-1 rounded hover:bg-blue-600">Logout</button>
+    </div>
+  </div>
+
+  <!-- Profile Form -->
+  <main class="max-w-4xl mx-auto p-6 bg-white rounded shadow mt-10">
+    <h1 class="text-2xl font-bold mb-6">Medical Profile</h1>
+    
+    <div id="loadingMessage" class="text-center py-4 text-gray-500">Loading profile...</div>
+    
+    <form id="medicalProfileForm" class="space-y-6" style="display: none;">
+      <!-- Personal Information Section -->
+      <div class="bg-blue-50 p-4 rounded-lg">
+        <h2 class="text-lg font-semibold mb-4 text-blue-800">Personal Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold mb-1">Full Name</label>
+            <input type="text" id="name" placeholder="John Doe" class="w-full border rounded px-4 py-2" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Date of Birth</label>
+            <input type="date" id="dob" class="w-full border rounded px-4 py-2" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Physical Information Section -->
+      <div class="bg-green-50 p-4 rounded-lg">
+        <h2 class="text-lg font-semibold mb-4 text-green-800">Physical Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block font-semibold mb-1">Blood Type</label>
+            <select id="bloodType" class="w-full border rounded px-4 py-2">
+              <option value="">Select blood type</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+              <option value="Unknown">Unknown</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Height</label>
+            <input type="text" id="height" placeholder="5'8" or 173 cm" class="w-full border rounded px-4 py-2" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Weight</label>
+            <input type="text" id="weight" placeholder="150 lbs" class="w-full border rounded px-4 py-2" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Contact Section -->
+      <div class="bg-red-50 p-4 rounded-lg">
+        <h2 class="text-lg font-semibold mb-4 text-red-800">Emergency Contact</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold mb-1">Contact Name</label>
+            <input type="text" id="emergencyContactName" placeholder="Jane Doe" class="w-full border rounded px-4 py-2" />
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Phone Number</label>
+            <input type="tel" id="emergencyContactPhone" placeholder="(555) 123-4567" class="w-full border rounded px-4 py-2" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Medical History Section -->
+      <div class="bg-yellow-50 p-4 rounded-lg">
+        <h2 class="text-lg font-semibold mb-4 text-yellow-800">Medical History</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold mb-1">Medical Conditions</label>
+            <textarea id="conditions" placeholder="List any chronic conditions, diagnoses, etc." class="w-full border rounded px-4 py-2" rows="3"></textarea>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Current Medications</label>
+            <textarea id="medications" placeholder="List current medications and dosages" class="w-full border rounded px-4 py-2" rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="block font-semibold mb-1">Allergies</label>
+            <textarea id="allergies" placeholder="Food, drug, or environmental allergies" class="w-full border rounded px-4 py-2" rows="3"></textarea>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Past Surgeries / Major Illnesses</label>
+            <textarea id="surgeries" placeholder="List past surgeries and major illnesses with dates" class="w-full border rounded px-4 py-2" rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Healthcare & Insurance Section -->
+      <div class="bg-purple-50 p-4 rounded-lg">
+        <h2 class="text-lg font-semibold mb-4 text-purple-800">Healthcare & Insurance</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-semibold mb-1">Healthcare Providers</label>
+            <textarea id="doctors" placeholder="Primary care physician, specialists, etc." class="w-full border rounded px-4 py-2" rows="3"></textarea>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Insurance Information</label>
+            <textarea id="insurance" placeholder="Insurance provider, policy number, group number" class="w-full border rounded px-4 py-2" rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="block font-semibold mb-1">Vaccination History</label>
+          <textarea id="vaccines" placeholder="Recent vaccinations and dates (COVID, flu, etc.)" class="w-full border rounded px-4 py-2" rows="2"></textarea>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-between items-center pt-6 border-t">
+        <button type="button" onclick="clearForm()" class="px-6 py-2 border border-gray-300 rounded hover:bg-gray-100 text-gray-700">
+          Clear All Fields
+        </button>
+        <div class="flex gap-2">
+          <button type="button" onclick="window.location.href='/dashboard.html'" class="px-6 py-2 border border-blue-300 rounded hover:bg-blue-50 text-blue-700">
+            Cancel
+          </button>
+          <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
+            Save Profile
+          </button>
+        </div>
+      </div>
+    </form>
+  </main>
+
+  <footer class="text-center py-6 text-gray-500 text-sm mt-10">
+    © 2025 ClearVisit AI. All rights reserved.
+  </footer>
+
+  <script>
+    // Check authentication
+    if (!localStorage.getItem('token')) {
+      window.location.href = '/login.html';
+    }
+    
+    const token = localStorage.getItem('token');
+
+    async function loadProfileData() {
+      const loadingMessage = document.getElementById('loadingMessage');
+      const form = document.getElementById('medicalProfileForm');
+      
+      try {
+        const response = await fetch('/api/profile', {
+          method: 'GET',
+          headers: { 'Authorization': token }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Populate form fields
+          document.getElementById('name').value = data.name || '';
+          document.getElementById('dob').value = data.dob ? data.dob.substring(0, 10) : '';
+          document.getElementById('bloodType').value = data.bloodType || '';
+          
+          // Handle legacy heightWeight field or new separate fields
+          if (data.heightWeight && !data.height && !data.weight) {
+            // Try to parse legacy combined field
+            const heightWeight = data.heightWeight;
+            // Simple parsing - you can make this more sophisticated
+            document.getElementById('height').value = heightWeight.split(',')[0]?.trim() || '';
+            document.getElementById('weight').value = heightWeight.split(',')[1]?.trim() || '';
+          } else {
+            document.getElementById('height').value = data.height || '';
+            document.getElementById('weight').value = data.weight || '';
+          }
+          
+          // Handle legacy emergencyContact or new separate fields
+          if (data.emergencyContact && !data.emergencyContactName && !data.emergencyContactPhone) {
+            // Try to parse legacy combined field
+            const emergency = data.emergencyContact;
+            const parts = emergency.split(/\s+/);
+            // Simple parsing - assume last part with numbers is phone
+            const phoneIndex = parts.findIndex(part => /\d/.test(part));
+            if (phoneIndex !== -1) {
+              document.getElementById('emergencyContactName').value = parts.slice(0, phoneIndex).join(' ');
+              document.getElementById('emergencyContactPhone').value = parts.slice(phoneIndex).join(' ');
+            } else {
+              document.getElementById('emergencyContactName').value = emergency;
+            }
+          } else {
+            document.getElementById('emergencyContactName').value = data.emergencyContactName || '';
+            document.getElementById('emergencyContactPhone').value = data.emergencyContactPhone || '';
+          }
+          
+          document.getElementById('conditions').value = data.conditions || '';
+          document.getElementById('medications').value = data.medications || '';
+          document.getElementById('allergies').value = data.allergies || '';
+          document.getElementById('surgeries').value = data.surgeries || '';
+          document.getElementById('doctors').value = data.doctors || '';
+          document.getElementById('insurance').value = data.insurance || '';
+          document.getElementById('vaccines').value = data.vaccines || '';
+          
+          // Show form and hide loading message
+          loadingMessage.style.display = 'none';
+          form.style.display = 'block';
+        } else {
+          throw new Error('Failed to load profile');
+        }
+      } catch (err) {
+        console.error('Failed to load profile', err);
+        loadingMessage.textContent = 'Error loading profile. You can still create a new one.';
+        form.style.display = 'block';
+      }
+    }
+
+    document.getElementById('medicalProfileForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const submitButton = e.target.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+      submitButton.textContent = 'Saving...';
+      submitButton.disabled = true;
+
+      const profileData = {
+        name: document.getElementById('name').value,
+        dob: document.getElementById('dob').value,
+        bloodType: document.getElementById('bloodType').value,
+        height: document.getElementById('height').value,
+        weight: document.getElementById('weight').value,
+        emergencyContactName: document.getElementById('emergencyContactName').value,
+        emergencyContactPhone: document.getElementById('emergencyContactPhone').value,
+        conditions: document.getElementById('conditions').value,
+        medications: document.getElementById('medications').value,
+        allergies: document.getElementById('allergies').value,
+        surgeries: document.getElementById('surgeries').value,
+        doctors: document.getElementById('doctors').value,
+        insurance: document.getElementById('insurance').value,
+        vaccines: document.getElementById('vaccines').value,
+      };
+
+      try {
+        const response = await fetch('/api/profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token
+          },
+          body: JSON.stringify(profileData)
+        });
+
+        if (response.ok) {
+          // Show success message briefly, then redirect
+          submitButton.textContent = 'Saved! Redirecting...';
+          setTimeout(() => {
+            window.location.href = '/dashboard.html';
+          }, 1000);
+        } else {
+          const errorData = await response.json();
+          alert('Failed to save profile: ' + (errorData.message || 'Unknown error'));
+          submitButton.textContent = originalText;
+          submitButton.disabled = false;
+        }
+      } catch (err) {
+        console.error('Save failed', err);
+        alert('Error saving profile. Please try again.');
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+      }
+    });
+
+    function clearForm() {
+      if (confirm('Are you sure you want to clear all fields?')) {
+        document.getElementById('medicalProfileForm').reset();
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('userEmail');
+      window.location.href = '/login.html';
+    }
+
+    // Load profile data when page loads
+    window.onload = loadProfileData;
+  </script>
+  <!-- PWA Service Worker Registration -->
+<script>
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('✅ SW registered: ', registration);
+        })
+        .catch((registrationError) => {
+          console.log('❌ SW registration failed: ', registrationError);
+        });
+    });
+  }
+
+  // Handle install prompt
+  let deferredPrompt;
+  
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    console.log('💾 Install prompt ready');
+    
+    // Optionally show your own install button
+    showInstallButton();
+  });
+  
+  function showInstallButton() {
+    // You can create a custom install button here
+    console.log('📱 App can be installed!');
+  }
+  
+  window.addEventListener('appinstalled', (evt) => {
+    console.log('🎉 App was installed successfully!');
+  });
+</script>
+</body>
+</html>
