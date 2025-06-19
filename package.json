@@ -2,8 +2,8 @@
   "name": "clearvisit-backend",
   "version": "1.0.0",
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js"
+    "start": "node backend/app.js",
+    "dev": "nodemon backend/app.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.0",
