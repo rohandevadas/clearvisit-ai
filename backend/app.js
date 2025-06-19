@@ -1,11 +1,11 @@
-console.log("🚀 Starting app.js...");
+console.log("Starting app.js...");
 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
-console.log("📁 MONGO_URI:", process.env.MONGO_URI); // Add this line
+
 
 
 const authRoutes = require('./routes/auth');
@@ -65,14 +65,14 @@ mongoose.connect(process.env.MONGO_URI, {
   useUnifiedTopology: true
 })
 .then(() => {
-  console.log('✅ MongoDB connected');
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📱 Frontend available at: http://localhost:${PORT}`);
-    console.log(`🔗 API endpoints available at: http://localhost:${PORT}/api`);
-    console.log(`🎙️ Audio processing enabled with OpenAI`);
+  console.log('MongoDB connected');
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Frontend available at: http://localhost:${PORT}`);
+    console.log(`API endpoints available at: http://localhost:${PORT}/api`);
+    console.log(`Audio processing enabled with OpenAI`);
   });
 })
 .catch(err => {
-  console.error('❌ MongoDB connection error:', err);
+  console.error('MongoDB connection error:', err);
 });
