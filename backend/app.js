@@ -1,4 +1,4 @@
-console.log("Starting app.js...");
+/*console.log("Starting app.js...");
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -75,4 +75,19 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .catch(err => {
   console.error('MongoDB connection error:', err);
+});
+*/
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+console.log(`Starting app on port ${PORT}`);
+
+app.get('/', (req, res) => {
+  console.log('Request received!');
+  res.send(`<h1>Railway Test</h1><p>Port: ${PORT}</p><p>Time: ${new Date()}</p>`);
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server listening on 0.0.0.0:${PORT}`);
 });
