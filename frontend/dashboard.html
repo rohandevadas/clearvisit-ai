@@ -216,47 +216,75 @@
 
     // Load and display appointments
     async function loadAppointments() {
-      const token = localStorage.getItem("token");
-      const upcomingContainer = document.getElementById("upcomingAppointments");
-      const pastContainer = document.getElementById("pastAppointments");
+  const token = localStorage.getItem("token");
+  const upcomingContainer = document.getElementById("upcomingAppointments");
+  const pastContainer = document.getElementById("pastAppointments");
 
-      try {
-        const res = await fetch("/api/appointments", {
-          headers: { Authorization: token }
-        });
+  // ✅ Check if token exists
+  if (!token) {
+    console.log("❌ No token found, redirecting to login");
+    window.location.href = "/login.html";
+    return;
+  }
 
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
+  console.log("🔑 Token found, loading appointments..."); // Debug log
 
-        const appointments = await res.json();
-        const now = new Date();
+  try {
+    const res = await fetch("/api/appointments", {
+      headers: { Authorization: token }
+    });
 
-        const upcoming = appointments.filter(app => new Date(app.date) > now);
-        const past = appointments.filter(app => new Date(app.date) <= now);
-
-        // Clear containers
-        upcomingContainer.innerHTML = '';
-        pastContainer.innerHTML = '';
-
-        if (upcoming.length === 0) {
-          upcomingContainer.innerHTML = `<p class="text-gray-500">No upcoming appointments</p>`;
-        } else {
-          upcoming.forEach(app => upcomingContainer.appendChild(renderCard(app)));
-        }
-
-        if (past.length === 0) {
-          pastContainer.innerHTML = `<p class="text-gray-500">No previous appointments</p>`;
-        } else {
-          past.forEach(app => pastContainer.appendChild(renderCard(app)));
-        }
-
-      } catch (err) {
-        console.error("❌ Error loading appointments:", err);
-        upcomingContainer.innerHTML = `<p class="text-red-500">Error loading upcoming appointments</p>`;
-        pastContainer.innerHTML = `<p class="text-red-500">Error loading past appointments</p>`;
-      }
+    
+    if (res.status === 403) {
+      console.log("Token invalid/expired, clearing and redirecting");
+      localStorage.removeItem("token");
+      window.location.href = "/login.html";
+      return;
     }
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    const appointments = await res.json();
+    console.log("Appointments loaded:", appointments.length); // Debug log
+    
+    const now = new Date();
+
+    const upcoming = appointments.filter(app => new Date(app.date) > now);
+    const past = appointments.filter(app => new Date(app.date) <= now);
+
+    // Clear containers
+    upcomingContainer.innerHTML = '';
+    pastContainer.innerHTML = '';
+
+    if (upcoming.length === 0) {
+      upcomingContainer.innerHTML = `<p class="text-gray-500">No upcoming appointments</p>`;
+    } else {
+      upcoming.forEach(app => upcomingContainer.appendChild(renderCard(app)));
+    }
+
+    if (past.length === 0) {
+      pastContainer.innerHTML = `<p class="text-gray-500">No previous appointments</p>`;
+    } else {
+      past.forEach(app => pastContainer.appendChild(renderCard(app)));
+    }
+
+  } catch (err) {
+    console.error("Error loading appointments:", err);
+    
+    
+    if (err.message.includes('403') || err.message.includes('Forbidden')) {
+      console.log("Auth error, clearing token and redirecting");
+      localStorage.removeItem("token");
+      window.location.href = "/login.html";
+      return;
+    }
+    
+    upcomingContainer.innerHTML = `<p class="text-red-500">Error loading upcoming appointments</p>`;
+    pastContainer.innerHTML = `<p class="text-red-500">Error loading past appointments</p>`;
+  }
+}
 
     function renderCard(app) {
       const dateObj = new Date(app.date);
