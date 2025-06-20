@@ -86,7 +86,7 @@
   
       try {
         const res = await fetch("/api/register", {
-  method: "POST",
+  method: "POST", 
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ email, password })
 });
@@ -96,6 +96,7 @@ const data = await res.json();
 if (res.ok) {
   if (data.token) {
     localStorage.setItem("token", data.token);
+    localStorage.setItem("userEmail", email);
     window.location.href = "/dashboard.html";
   } else {
     alert("Registration successful! Please log in.");
