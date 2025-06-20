@@ -111,7 +111,7 @@
       <form id="appointmentForm" class="space-y-4">
         <div>
           <label class="block font-semibold mb-1">Doctor's Name</label>
-          <input type="text" id="doctor" placeholder="Dr. John Smith" required class="w-full border rounded px-4 py-2" />
+          <input type="text" id="doctor" placeholder="John Smith" required class="w-full border rounded px-4 py-2" />
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -222,12 +222,12 @@
 
   // ✅ Check if token exists
   if (!token) {
-    console.log("❌ No token found, redirecting to login");
+    console.log("No token found, redirecting to login");
     window.location.href = "/login.html";
     return;
   }
 
-  console.log("🔑 Token found, loading appointments..."); // Debug log
+  console.log("Token found, loading appointments..."); // Debug log
 
   try {
     const res = await fetch("/api/appointments", {
