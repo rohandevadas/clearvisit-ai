@@ -28,13 +28,48 @@ self.addEventListener('install', (event) => {
 
 // Fetch events - serve from cache when offline
 self.addEventListener('fetch', (event) => {
+  if (event.request.url.includes('/api/')) {
+    console.log('API request detected, bypassing cache:', event.request.url);
+    return; // Let the request go through normally
+  }
+
+  
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
-      }
-    )
+        if (response) {
+          console.log('Serving from cache:', event.request.url);
+          return response;
+        }
+        
+        console.log('Fetching from network:', event.request.url);
+        return fetch(event.request)
+          .then((response) => {
+            // Only cache successful responses for static assets
+            if (response.status === 200 && 
+                (event.request.url.includes('.html') || 
+                 event.request.url.includes('.css') || 
+                 event.request.url.includes('.js') || 
+                 event.request.url.includes('.png') || 
+                 event.request.url.includes('.jpg') || 
+                 event.request.url.includes('.ico'))) {
+              
+              const responseToCache = response.clone();
+              caches.open(CACHE_NAME)
+                .then((cache) => {
+                  cache.put(event.request, responseToCache);
+                });
+            }
+            return response;
+          })
+          .catch((error) => {
+            console.log('Network fetch failed:', error);
+            // Return a fallback page if available
+            if (event.request.destination === 'document') {
+              return caches.match('/login.html');
+            }
+          });
+      })
   );
 });
 
@@ -75,7 +110,7 @@ self.addEventListener('push', (event) => {
         primaryKey: 1
       }
     };
-    
+        
     event.waitUntil(
       self.registration.showNotification('ClearVisit AI', options)
     );
