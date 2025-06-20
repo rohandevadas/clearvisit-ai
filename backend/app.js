@@ -28,6 +28,15 @@ if (!require('fs').existsSync(uploadsDir)) {
 // Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
 
+// Add this middleware before your routes in app.js
+app.use((req, res, next) => {
+  if (req.path === '/api/register') {
+    console.log('📧 Register request body:', req.body);
+    console.log('📧 Content-Type:', req.headers['content-type']);
+  }
+  next();
+});
+
 // API Routes
 app.use('/api', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
