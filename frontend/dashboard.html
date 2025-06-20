@@ -74,7 +74,7 @@
         <button onclick="openModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
           + New Appointment
         </button>
-        <a href="/profile.html" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+        <a href="/profile.html" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
           View Medical Profile
         </a>
       </div>
@@ -220,7 +220,7 @@
   const upcomingContainer = document.getElementById("upcomingAppointments");
   const pastContainer = document.getElementById("pastAppointments");
 
-  // ✅ Check if token exists
+  
   if (!token) {
     console.log("No token found, redirecting to login");
     window.location.href = "/login.html";
