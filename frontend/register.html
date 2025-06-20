@@ -85,7 +85,7 @@
       }
   
       try {
-        const res = await fetch("api/register", {
+        const res = await fetch("/api/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password })
@@ -112,10 +112,10 @@
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
-          console.log('✅ SW registered: ', registration);
+          console.log('SW registered: ', registration);
         })
         .catch((registrationError) => {
-          console.log('❌ SW registration failed: ', registrationError);
+          console.log('SW registration failed: ', registrationError);
         });
     });
   }
@@ -128,7 +128,7 @@
     e.preventDefault();
     // Stash the event so it can be triggered later
     deferredPrompt = e;
-    console.log('💾 Install prompt ready');
+    console.log('Install prompt ready');
     
     // Optionally show your own install button
     showInstallButton();
@@ -136,11 +136,11 @@
   
   function showInstallButton() {
     // You can create a custom install button here
-    console.log('📱 App can be installed!');
+    console.log('App can be installed!');
   }
   
   window.addEventListener('appinstalled', (evt) => {
-    console.log('🎉 App was installed successfully!');
+    console.log('App was installed successfully!');
   });
 </script>
 </body>
