@@ -9,21 +9,19 @@ const urlsToCache = [
   '/visit.html',
   '/manifest.json',
   '/heart-icon.png',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
 ];
 
 // Install Service Worker
 self.addEventListener('install', (event) => {
-  console.log('🔧 Service Worker installing...');
+  console.log('Service Worker installing...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('📦 Caching app shell');
+        console.log('Caching app shell');
         return cache.addAll(urlsToCache);
       })
       .catch((error) => {
-        console.log('❌ Cache failed:', error);
+        console.log('Cache failed:', error);
       })
   );
 });
@@ -42,13 +40,13 @@ self.addEventListener('fetch', (event) => {
 
 // Activate Service Worker
 self.addEventListener('activate', (event) => {
-  console.log('✅ Service Worker activated');
+  console.log('Service Worker activated');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            console.log('🗑️ Deleting old cache:', cacheName);
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -60,7 +58,7 @@ self.addEventListener('activate', (event) => {
 // Handle background sync (optional - for future features)
 self.addEventListener('sync', (event) => {
   if (event.tag === 'background-sync') {
-    console.log('🔄 Background sync triggered');
+    console.log('Background sync triggered');
   }
 });
 
