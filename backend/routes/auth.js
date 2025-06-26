@@ -19,7 +19,7 @@ router.post('/register', async (req, res) => {
     await newUser.save();
 
     // Generate token immediately after registration
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
     
     console.log("User registered and token generated");
     res.status(201).json({ 
@@ -45,7 +45,7 @@ router.post('/login', async (req, res) => {
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
   
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
       res.json({ token });
     } catch (err) {
       console.error("Login error:", err);
