@@ -52,7 +52,7 @@ app.get('*', (req, res) => {
   
   // For root path, serve login.html
   if (req.path === '/') {
-    return res.sendFile(path.join(__dirname, '../frontend/login.html'));
+    return res.sendFile(path.join(__dirname, '../frontend/index.html'));
   }
   
   // For other paths, try to serve the corresponding HTML file
