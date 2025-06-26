@@ -70,45 +70,34 @@
   </div>
 
   <script>
-    document.getElementById("registerForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
   
-      const name = document.getElementById("name").value.trim(); // Optional
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const confirmPassword = document.getElementById("confirmPassword").value;
-      const message = document.getElementById("message");
-  
-      if (password !== confirmPassword) {
-        message.textContent = "Passwords do not match.";
-        return;
-      }
-  
-      try {
-        const res = await fetch("/api/register", {
-  method: "POST", 
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email, password })
-});
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const message = document.getElementById('message');
 
-const data = await res.json();
-
-if (res.ok) {
-  if (data.token) {
-    localStorage.setItem("token", data.token);
-    localStorage.setItem("userEmail", email);
-    window.location.href = "/dashboard.html";
-  } else {
-    alert("Registration successful! Please log in.");
-    window.location.href = "/login.html";
-  }
-} else {
-  alert(data.message || 'Registration failed');
-}
-      } catch (err) {
-        message.textContent = "Server error.";
-      }
+  try {
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: 'include', // Include cookies
+      body: JSON.stringify({ email, password })
     });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      
+      window.location.href = "/dashboard.html";
+    } else {
+      message.textContent = data.message || "Registration failed.";
+    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    message.textContent = "Network error. Please try again.";
+  }
+});
   </script>
   <!-- PWA Service Worker Registration -->
 <script>

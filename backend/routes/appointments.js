@@ -4,9 +4,9 @@ const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-// Middleware to check auth token
 function authenticateToken(req, res, next) {
-  const token = req.headers['authorization'];
+  const token = req.cookies.token; // Get from cookies instead of headers
+  
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
@@ -16,7 +16,7 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// ✅ POST - Create appointment
+// Create appointment
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const { doctor, date, reason, goal, symptoms } = req.body;

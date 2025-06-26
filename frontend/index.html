@@ -14,17 +14,25 @@
   </div>
 
   <script>
-    // Check if user is already logged in
-    document.addEventListener('DOMContentLoaded', function() {
-      const token = localStorage.getItem('token');
-      
-      if (token) {
-        // User has a token, redirect to dashboard
-        console.log('User already logged in, redirecting to dashboard...');
-        window.location.href = '/dashboard.html';
-      } else {
-        // No token, redirect to login
-        console.log('No token found, redirecting to login...');
+    // Check if user is already logged in using cookie-based auth
+    document.addEventListener('DOMContentLoaded', async function() {
+      try {
+        const res = await fetch('/api/me', {
+          credentials: 'include'
+        });
+        
+        if (res.ok) {
+          // User is logged in, redirect to dashboard
+          console.log('User already logged in, redirecting to dashboard...');
+          window.location.href = '/dashboard.html';
+        } else {
+          // Not logged in, redirect to login
+          console.log('User not logged in, redirecting to login...');
+          window.location.href = '/login.html';
+        }
+      } catch (error) {
+        // Network error, redirect to login
+        console.log('Error checking auth status, redirecting to login...');
         window.location.href = '/login.html';
       }
     });

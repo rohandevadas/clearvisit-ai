@@ -4,9 +4,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
-
-
 
 const authRoutes = require('./routes/auth');
 const appointmentRoutes = require('./routes/appointments');
@@ -16,8 +15,12 @@ const audioRoutes = require('./routes/audio');
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  credentials: true, // Allow cookies
+  origin: process.env.FRONTEND_URL || true
+}));
 app.use(express.json());
+app.use(cookieParser()); // Add cookie parser
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -27,15 +30,6 @@ if (!require('fs').existsSync(uploadsDir)) {
 
 // Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
-
-// Add this middleware before your routes in app.js
-app.use((req, res, next) => {
-  if (req.path === '/api/register') {
-    console.log('📧 Register request body:', req.body);
-    console.log('📧 Content-Type:', req.headers['content-type']);
-  }
-  next();
-});
 
 // API Routes
 app.use('/api', authRoutes);
@@ -50,7 +44,7 @@ app.get('*', (req, res) => {
     return res.status(404).json({ message: 'API endpoint not found' });
   }
   
-  // For root path, serve login.html
+  // For root path, serve index.html
   if (req.path === '/') {
     return res.sendFile(path.join(__dirname, '../frontend/index.html'));
   }
@@ -85,4 +79,3 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch(err => {
   console.error('MongoDB connection error:', err);
 });
-

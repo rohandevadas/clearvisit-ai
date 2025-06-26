@@ -29,9 +29,9 @@ const upload = multer({
   }
 });
 
-// Middleware to check auth token
 function authenticateToken(req, res, next) {
-  const token = req.headers['authorization'];
+  const token = req.cookies.token; // Get from cookies instead of headers
+  
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {

@@ -63,33 +63,34 @@
 
   <script>
 
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
   
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
-      const message = document.getElementById("message");
-  
-      try {
-        const res = await fetch("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
-        });
-  
-        const data = await res.json();
-  
-        if (res.ok) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("userEmail", email);
-          window.location.href = "dashboard.html";
-        } else {
-          message.textContent = data.message || "Login failed.";
-        }
-      } catch (err) {
-        message.textContent = "Server error.";
-      }
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const message = document.getElementById('message');
+
+  try {
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: 'include', // Include cookies
+      body: JSON.stringify({ email, password })
     });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      // No need to store anything - cookie is set automatically
+      window.location.href = "/dashboard.html";
+    } else {
+      message.textContent = data.message || "Login failed.";
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    message.textContent = "Network error. Please try again.";
+  }
+});
   </script>
   <!-- PWA Service Worker Registration -->
 <script>

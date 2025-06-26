@@ -7,8 +7,10 @@ console.log("✅ MedicalProfile model loaded:", typeof MedicalProfile);
 const router = express.Router();
 
 function authenticateToken(req, res, next) {
-  const token = req.headers['authorization'];
+  const token = req.cookies.token; // Get from cookies instead of headers
+  
   if (!token) return res.sendStatus(401);
+
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
     req.user = user;
