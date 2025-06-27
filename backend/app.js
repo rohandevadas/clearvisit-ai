@@ -44,9 +44,9 @@ app.get('*', (req, res) => {
     return res.status(404).json({ message: 'API endpoint not found' });
   }
   
-  // For root path, serve index.html
+  // For root path, serve dashboard.html
   if (req.path === '/') {
-    return res.sendFile(path.join(__dirname, '../frontend/index.html'));
+    return res.sendFile(path.join(__dirname, '../frontend/dashboard.html'));
   }
   
   // For other paths, try to serve the corresponding HTML file
