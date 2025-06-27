@@ -30,7 +30,8 @@ const upload = multer({
 });
 
 function authenticateToken(req, res, next) {
-  const token = req.cookies.token; // Get from cookies instead of headers
+  // Try cookie first, then Authorization header as fallback
+  let token = req.cookies.token || req.headers.authorization;
   
   if (!token) return res.sendStatus(401);
 

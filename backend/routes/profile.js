@@ -2,12 +2,13 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const MedicalProfile = require('../models/MedicalProfile');
 
-console.log("✅ MedicalProfile model loaded:", typeof MedicalProfile);
+console.log("MedicalProfile model loaded:", typeof MedicalProfile);
 
 const router = express.Router();
 
 function authenticateToken(req, res, next) {
-  const token = req.cookies.token; // Get from cookies instead of headers
+  // Try cookie first, then Authorization header as fallback
+  let token = req.cookies.token || req.headers.authorization;
   
   if (!token) return res.sendStatus(401);
 

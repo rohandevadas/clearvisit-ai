@@ -82,7 +82,7 @@ router.post('/logout', (req, res) => {
 
 // Check auth status
 router.get('/me', (req, res) => {
-  const token = req.cookies.token;
+  const token = req.cookies.token || req.headers.authorization;
   
   if (!token) {
     return res.status(401).json({ message: 'Not authenticated' });

@@ -5,7 +5,8 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 function authenticateToken(req, res, next) {
-  const token = req.cookies.token; // Get from cookies instead of headers
+  // Try cookie first, then Authorization header as fallback
+  let token = req.cookies.token || req.headers.authorization;
   
   if (!token) return res.sendStatus(401);
 
@@ -33,12 +34,12 @@ router.post('/', authenticateToken, async (req, res) => {
     await appointment.save();
     res.status(201).json(appointment);
   } catch (err) {
-    console.error("❌ Appointment error:", err);
+    console.error("Appointment error:", err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// ✅ GET - All appointments for user
+
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const appointments = await Appointment.find({ userId: req.user.id }).sort({ date: 1 });
