@@ -175,11 +175,18 @@
 
   <script>
     // Check authentication
-    if (!localStorage.getItem('token')) {
+    async function checkAuth() {
+  try {
+    const res = await fetch('/api/me', {
+      credentials: 'include'
+    });
+    if (!res.ok) {
       window.location.href = '/login.html';
     }
-    
-    const token = localStorage.getItem('token');
+  } catch (error) {
+    window.location.href = '/login.html';
+  }
+}
 
     async function loadProfileData() {
       const loadingMessage = document.getElementById('loadingMessage');
@@ -188,7 +195,7 @@
       try {
         const response = await fetch('/api/profile', {
           method: 'GET',
-          headers: { 'Authorization': token }
+          credentials: 'include'
         });
 
         if (response.ok) {
@@ -280,7 +287,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': token
+            credentials: 'include'
           },
           body: JSON.stringify(profileData)
         });
@@ -311,11 +318,18 @@
       }
     }
 
-    function logout() {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userEmail');
-      window.location.href = '/login.html';
-    }
+    async function logout() {
+  try {
+    await fetch('/api/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+  
+  window.location.href = '/login.html';
+}
 
     // Load profile data when page loads
     window.onload = loadProfileData;
