@@ -13,30 +13,34 @@
     <p class="text-gray-600">Loading...</p>
   </div>
 
-  <script>
-    // Check if user is already logged in using cookie-based auth
-    document.addEventListener('DOMContentLoaded', async function() {
-      try {
-        const res = await fetch('/api/me', {
-          credentials: 'include'
-        });
-        
-        if (res.ok) {
-          // User is logged in, redirect to dashboard
-          console.log('User already logged in, redirecting to dashboard...');
-          window.location.href = '/dashboard.html';
-        } else {
-          // Not logged in, redirect to login
-          console.log('User not logged in, redirecting to login...');
-          window.location.href = '/login.html';
-        }
-      } catch (error) {
-        // Network error, redirect to login
-        console.log('Error checking auth status, redirecting to login...');
-        window.location.href = '/login.html';
-      }
+  
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+  console.log('Index.html loaded on Safari');
+  
+  try {
+    console.log('Calling /api/me...');
+    const res = await fetch('/api/me', {
+      credentials: 'include'
     });
-  </script>
+    
+    console.log('Response status:', res.status);
+    
+    if (res.ok) {
+      const user = await res.json();
+      console.log('User found:', user.email);
+      console.log('Redirecting to dashboard...');
+      window.location.href = '/dashboard.html';
+    } else {
+      console.log('No user, redirecting to login...');
+      window.location.href = '/login.html';
+    }
+  } catch (error) {
+    console.error('Error in index.html:', error);
+    window.location.href = '/login.html';
+  }
+});
+</script>
 
 </body>
 </html>
