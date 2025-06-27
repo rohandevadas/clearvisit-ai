@@ -150,22 +150,28 @@
 
   <script>
     // Check authentication and load user info
-    async function loadUserInfo() {
-      try {
-        const res = await fetch('/api/me', {
-          credentials: 'include'
-        });
-        
-        if (res.ok) {
-          const user = await res.json();
-          document.getElementById("userEmail").textContent = `Welcome, ${user.email}`;
-        } else {
-          window.location.href = '/login.html';
-        }
-      } catch (error) {
-        window.location.href = '/login.html';
-      }
+   async function loadUserInfo() {
+  console.log('Dashboard loaded, checking auth...');
+  try {
+    const res = await fetch('/api/me', {
+      credentials: 'include'
+    });
+    
+    console.log('Auth check response:', res.status);
+    
+    if (res.ok) {
+      const user = await res.json();
+      console.log('User authenticated:', user.email);
+      document.getElementById("userEmail").textContent = `Welcome, ${user.email}`;
+    } else {
+      console.log('Not authenticated, redirecting to login');
+      window.location.href = '/login.html';
     }
+  } catch (error) {
+    console.log('Auth check error:', error);
+    window.location.href = '/login.html';
+  }
+}
 
     // Logout functionality
     async function logout() {
