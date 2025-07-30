@@ -7,6 +7,12 @@ const mongoose = require('mongoose');
 
 const router = express.Router();
 
+//test 
+router.get('/test-simple-analysis', (req, res) => {
+  console.log('🧪 Test route hit - simpleAnalysis route is working');
+  res.json({ message: 'simpleAnalysis route is working', timestamp: new Date() });
+});
+
 // Simple schema for storing analysis data
 const SimpleAnalysisSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
