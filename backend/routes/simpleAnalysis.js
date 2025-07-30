@@ -35,7 +35,13 @@ function authenticateToken(req, res, next) {
 }
 
 // POST - Save analysis data
-router.post('/simple-analysis', authenticateToken, async (req, res) => {
+router.post('/simple-analysis', (req, res, next) => {
+  console.log('🎯 POST /simple-analysis route HIT - before auth');
+  console.log('  - Request body keys:', Object.keys(req.body));
+  console.log('  - Content-Type:', req.headers['content-type']);
+  next();
+}, authenticateToken, async (req, res) => {
+  console.log('🎯 POST /simple-analysis route - AFTER auth, user:', req.user?.id);
   try {
     const { appointmentId, analysisData } = req.body;
 
