@@ -22,13 +22,8 @@ const SimpleAnalysis = mongoose.model('SimpleAnalysis', SimpleAnalysisSchema);
 
 // Auth middleware
 function authenticateToken(req, res, next) {
-  // Try to get token from cookie first (like your other routes)
-  let token = req.cookies?.token;
-  
-  // Fallback to header if no cookie (for API flexibility)
-  if (!token) {
-    token = req.headers['authorization'];
-  }
+  // Try cookie first, then Authorization header as fallback
+  let token = req.cookies.token || req.headers.authorization;
   
   if (!token) return res.sendStatus(401);
 
