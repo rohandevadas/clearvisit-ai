@@ -309,7 +309,7 @@
   }
 }
 
-    
+    let analysisSync;
     let currentAppointment = null;
     let mediaRecorder = null;
     let audioChunks = [];
@@ -326,7 +326,139 @@
     if (!appointmentId) {
       showError("No appointment ID provided");
     }
+    class SimpleAnalysisSync {
+  constructor(appointmentId) {
+    this.appointmentId = appointmentId;
+    this.storageKey = `ai_analyses_${appointmentId}`;
+  }
 
+  // Save analysis to both localStorage AND server
+  async saveAnalysis(analysisData) {
+    // Save to localStorage first (immediate)
+    this.saveToLocalStorage(analysisData);
+    
+    // Try to save to server
+    try {
+      await this.saveToServer(analysisData);
+      console.log('Analysis saved to cloud');
+    } catch (error) {
+      console.warn('Failed to save to cloud, saved locally:', error);
+    }
+  }
+
+  // Load analyses - try server first, fallback to localStorage
+  async loadAnalyses() {
+    try {
+      // Try to load from server first
+      const serverData = await this.loadFromServer();
+      if (serverData && serverData.length > 0) {
+        console.log(`Loaded ${serverData.length} analyses from cloud`);
+        return serverData;
+      }
+    } catch (error) {
+      console.warn('Failed to load from cloud, trying localStorage:', error);
+    }
+    
+    // Fallback to localStorage
+    return this.loadFromLocalStorage();
+  }
+
+  // Save to server
+  async saveToServer(analysisData) {
+    const response = await fetch('/api/simple-analysis', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        appointmentId: this.appointmentId,
+        analysisData: analysisData
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  // Load from server
+  async loadFromServer() {
+    const response = await fetch(`/api/simple-analysis/${this.appointmentId}`, {
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.analyses || [];
+  }
+
+  // Save to localStorage (existing logic)
+  saveToLocalStorage(analysisData) {
+    let savedData = { analyses: [], recordingCount: 0 };
+    
+    try {
+      const existing = localStorage.getItem(this.storageKey);
+      if (existing) {
+        savedData = JSON.parse(existing);
+      }
+    } catch (error) {
+      console.error('Error reading localStorage:', error);
+    }
+
+    // Add new analysis
+    savedData.analyses = savedData.analyses || [];
+    savedData.analyses.push(analysisData);
+    savedData.recordingCount = Math.max(savedData.recordingCount || 0, analysisData.id || 0);
+
+    localStorage.setItem(this.storageKey, JSON.stringify(savedData));
+  }
+
+  // Load from localStorage (existing logic)
+  loadFromLocalStorage() {
+    try {
+      const saved = localStorage.getItem(this.storageKey);
+      if (saved) {
+        const data = JSON.parse(saved);
+        return data.analyses || [];
+      }
+    } catch (error) {
+      console.error('Error loading from localStorage:', error);
+    }
+    return [];
+  }
+
+  // Delete analysis from both places
+  async deleteAnalysis(analysisId) {
+    // Delete from localStorage
+    try {
+      const saved = localStorage.getItem(this.storageKey);
+      if (saved) {
+        const data = JSON.parse(saved);
+        data.analyses = data.analyses.filter(a => a.id !== analysisId);
+        localStorage.setItem(this.storageKey, JSON.stringify(data));
+      }
+    } catch (error) {
+      console.error('Error deleting from localStorage:', error);
+    }
+
+    // Delete from server
+    try {
+      await fetch(`/api/simple-analysis/${this.appointmentId}/${analysisId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      console.log('✅ Analysis deleted from cloud');
+    } catch (error) {
+      console.warn('Failed to delete from cloud:', error);
+    }
+  }
+}
     // Audio Recording Functions
     async function toggleRecording() {
       if (mediaRecorder && mediaRecorder.state === 'recording') {
@@ -491,7 +623,7 @@
       document.getElementById('processingStatus').classList.add('hidden');
     }
 
-    function displayAIResults(result) {
+    async function displayAIResults(result) {
       recordingCount++;
       
       // Add this analysis to our collection
@@ -504,7 +636,9 @@
         questions: result.questions || [],
         actionItems: result.actionItems || []
       };
-      
+
+      await analysisSync.saveAnalysis(analysisData);
+
       allAnalyses.push(analysisData);
       
       // Create HTML for this specific analysis
@@ -580,9 +714,6 @@
       aiSection.classList.remove('hidden');
       updateAnalysisCount();
       
-      // Auto-save to localStorage
-      saveAnalysesToStorage();
-      
       // Scroll to the new analysis
       analysisElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       
@@ -608,29 +739,31 @@
       }, 2000);
     }
 
-    function removeAnalysis(analysisId) {
-      if (confirm('Remove this analysis?')) {
-        // Remove from array
-        allAnalyses = allAnalyses.filter(analysis => analysis.id !== analysisId);
-        
-        // Remove from DOM
-        const element = document.getElementById(`analysis-${analysisId}`);
-        if (element) {
-          element.remove();
-        }
-        
-        // Hide section if no analyses left
-        if (allAnalyses.length === 0) {
-          document.getElementById('aiAnalysisSection').classList.add('hidden');
-        } else {
-          updateAnalysisCount();
-        }
-        
-        // Save updated state
-        saveAnalysesToStorage();
-        showSaveConfirmation();
-      }
-    }
+    async function removeAnalysis(analysisId) {
+  if (!confirm('Remove this analysis? This will delete it from your account.')) {
+    return;
+  }
+
+  // Remove from server and localStorage
+  await analysisSync.deleteAnalysis(analysisId);
+  
+  // Remove from local array
+  allAnalyses = allAnalyses.filter(a => a.id !== analysisId);
+  
+  // Remove from UI
+  const element = document.getElementById(`analysis-${analysisId}`);
+  if (element) {
+    element.remove();
+  }
+  
+  // Update UI
+  updateAnalysisCount();
+  if (allAnalyses.length === 0) {
+    document.getElementById('aiAnalysisSection').classList.add('hidden');
+  }
+  
+  showSaveConfirmation('Analysis deleted from all devices');
+}
 
     function clearAllAnalysis() {
       if (confirm('Clear all AI analysis results? This cannot be undone.')) {
@@ -643,38 +776,43 @@
       }
     }
 
-    function saveAnalysesToStorage() {
-      const analysesKey = `ai_analyses_${appointmentId}`;
-      localStorage.setItem(analysesKey, JSON.stringify({
-        analyses: allAnalyses,
-        recordingCount: recordingCount
-      }));
+    async function saveAnalysesToStorage() {
+  try {
+    // Save all current analyses to server
+    for (const analysis of allAnalyses) {
+      await analysisSync.saveAnalysis(analysis);
     }
+    showSaveConfirmation('All analyses synced to cloud');
+  } catch (error) {
+    console.error('Error syncing analyses:', error);
+    showSaveConfirmation('Sync failed - saved locally only');
+  }
+}
 
-    function loadAnalysesFromStorage() {
-      const analysesKey = `ai_analyses_${appointmentId}`;
-      const savedData = localStorage.getItem(analysesKey);
+    async function loadAnalysesFromStorage() {
+  try {
+    // Load from cloud/localStorage
+    const analyses = await analysisSync.loadAnalyses();
+    
+    if (analyses.length > 0) {
+      allAnalyses = analyses;
+      recordingCount = Math.max(...analyses.map(a => a.id), 0);
       
-      if (savedData) {
-        try {
-          const data = JSON.parse(savedData);
-          allAnalyses = data.analyses || [];
-          recordingCount = data.recordingCount || 0;
-          
-          // Recreate the UI for each analysis
-          allAnalyses.forEach(analysis => {
-            displayStoredAnalysis(analysis);
-          });
-          
-          if (allAnalyses.length > 0) {
-            document.getElementById('aiAnalysisSection').classList.remove('hidden');
-            updateAnalysisCount();
-          }
-        } catch (err) {
-          console.error('Error loading saved analyses:', err);
-        }
-      }
+      // Display all analyses
+      analyses.forEach(analysis => {
+        displayStoredAnalysis(analysis);
+      });
+      
+      // Show section
+      document.getElementById('aiAnalysisSection').classList.remove('hidden');
+      updateAnalysisCount();
+      
+      console.log(`Loaded ${analyses.length} analyses from cloud`);
     }
+  } catch (error) {
+    console.error('Error loading analyses:', error);
+  }
+}
 
     function displayStoredAnalysis(analysisData) {
       const analysisElement = document.createElement('div');
@@ -1087,12 +1225,19 @@
 }
 
     // Load appointment details and notes when page loads
-    document.addEventListener('DOMContentLoaded', () => {
-      checkAuth();
-      loadAppointmentDetails();
-      loadVisitNotes();
-      loadAnalysesFromStorage(); // Load saved AI analyses
-    });
+    document.addEventListener('DOMContentLoaded', async function() {
+  checkAuth();
+  loadAppointmentDetails();
+  loadVisitNotes();
+  
+  // Initialize analysis sync
+  analysisSync = new SimpleAnalysisSync(appointmentId);
+  
+  // Load existing analyses with cloud sync
+  await loadAnalysesFromStorage();
+  
+  console.log('✅ Visit page initialized with cloud sync');
+});
   </script>
 
   <!-- PWA Service Worker Registration -->

@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const appointmentRoutes = require('./routes/appointments');
 const profileRoutes = require('./routes/profile');
 const audioRoutes = require('./routes/audio');
+const simpleAnalysisRoutes = require('./routes/simpleAnalysis');
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/api', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api', audioRoutes);
+app.use('/api', simpleAnalysisRoutes);
 
 // Serve frontend for any non-API routes
 app.get('*', (req, res) => {
