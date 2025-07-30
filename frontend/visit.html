@@ -626,6 +626,10 @@
     async function displayAIResults(result) {
       recordingCount++;
       
+      console.log('🔍 displayAIResults called');
+  console.log('🔍 analysisSync exists:', !!analysisSync);
+  console.log('🔍 appointmentId:', appointmentId);
+
       // Add this analysis to our collection
       const analysisData = {
         id: recordingCount,
@@ -636,8 +640,14 @@
         questions: result.questions || [],
         actionItems: result.actionItems || []
       };
+      console.log('🔍 About to call saveAnalysis');
 
-      await analysisSync.saveAnalysis(analysisData);
+      try {
+    await analysisSync.saveAnalysis(analysisData);
+    console.log('🔍 saveAnalysis completed');
+  } catch (error) {
+    console.error('🔍 saveAnalysis failed:', error);
+  }
 
       allAnalyses.push(analysisData);
       
@@ -1226,12 +1236,15 @@
 
     // Load appointment details and notes when page loads
     document.addEventListener('DOMContentLoaded', async function() {
+      console.log('🔍 DOMContentLoaded - appointmentId:', appointmentId);
   checkAuth();
   loadAppointmentDetails();
   loadVisitNotes();
   
   // Initialize analysis sync
+  console.log('🔍 Creating SimpleAnalysisSync...');
   analysisSync = new SimpleAnalysisSync(appointmentId);
+  console.log('🔍 analysisSync created:', !!analysisSync);
   
   // Load existing analyses with cloud sync
   await loadAnalysesFromStorage();
