@@ -330,40 +330,116 @@
   constructor(appointmentId) {
     this.appointmentId = appointmentId;
     this.storageKey = `ai_analyses_${appointmentId}`;
+    this.syncedKey = `synced_${appointmentId}`;
   }
 
-  // Save analysis to both localStorage AND server
+  // Save analysis to both localStorage AND server with proper sync
   async saveAnalysis(analysisData) {
-    // Save to localStorage first (immediate)
+    console.log('💾 Saving analysis:', analysisData.id);
+    
+    // Always save to localStorage first (immediate)
     this.saveToLocalStorage(analysisData);
     
-    // Try to save to server
+    // Try to save to server and mark as synced
     try {
       await this.saveToServer(analysisData);
-      console.log('Analysis saved to cloud');
+      this.markAsSynced(analysisData.id);
+      console.log('✅ Analysis saved to cloud and marked as synced');
+      return { success: true, synced: true };
     } catch (error) {
-      console.warn('Failed to save to cloud, saved locally:', error);
+      console.warn('⚠️ Failed to save to cloud, saved locally only:', error);
+      this.markAsUnsynced(analysisData.id);
+      return { success: true, synced: false };
     }
   }
 
-  // Load analyses - try server first, fallback to localStorage
+  // Load analyses with proper merging from both sources
   async loadAnalyses() {
+    console.log('📥 Loading analyses from all sources...');
+    
+    let serverAnalyses = [];
+    let localAnalyses = [];
+    let mergedAnalyses = [];
+
+    // Try to load from server first
     try {
-      // Try to load from server first
-      const serverData = await this.loadFromServer();
-      if (serverData && serverData.length > 0) {
-        console.log(`Loaded ${serverData.length} analyses from cloud`);
-        return serverData;
-      }
+      serverAnalyses = await this.loadFromServer();
+      console.log(`📡 Loaded ${serverAnalyses.length} analyses from server`);
     } catch (error) {
-      console.warn('Failed to load from cloud, trying localStorage:', error);
+      console.warn('⚠️ Failed to load from server:', error);
     }
     
-    // Fallback to localStorage
-    return this.loadFromLocalStorage();
+    // Load from localStorage
+    localAnalyses = this.loadFromLocalStorage();
+    console.log(`💻 Loaded ${localAnalyses.length} analyses from localStorage`);
+
+    // Merge analyses (server takes precedence, but include unsynced local items)
+    const analysisMap = new Map();
+    
+    // Add server analyses first (these are authoritative)
+    serverAnalyses.forEach(analysis => {
+      analysisMap.set(analysis.id, { ...analysis, source: 'server' });
+    });
+    
+    // Add local analyses that aren't on server or are newer
+    localAnalyses.forEach(analysis => {
+      const existing = analysisMap.get(analysis.id);
+      if (!existing) {
+        // This analysis doesn't exist on server, include it
+        analysisMap.set(analysis.id, { ...analysis, source: 'local' });
+      } else if (new Date(analysis.timestamp) > new Date(existing.timestamp)) {
+        // Local version is newer, use it but try to sync
+        analysisMap.set(analysis.id, { ...analysis, source: 'local-newer' });
+        this.backgroundSync(analysis);
+      }
+    });
+
+    mergedAnalyses = Array.from(analysisMap.values()).sort((a, b) => a.id - b.id);
+    
+    // Update localStorage with merged data
+    this.saveAllToLocalStorage(mergedAnalyses);
+    
+    // Sync any unsynced local items in background
+    await this.syncPendingAnalyses();
+    
+    console.log(`✅ Merged ${mergedAnalyses.length} total analyses`);
+    return mergedAnalyses;
   }
 
-  // Save to server
+  // Background sync for unsynced analyses
+  async syncPendingAnalyses() {
+    const localAnalyses = this.loadFromLocalStorage();
+    const unsyncedAnalyses = localAnalyses.filter(analysis => 
+      !this.isSynced(analysis.id)
+    );
+
+    if (unsyncedAnalyses.length === 0) return;
+
+    console.log(`🔄 Syncing ${unsyncedAnalyses.length} pending analyses...`);
+    
+    for (const analysis of unsyncedAnalyses) {
+      try {
+        await this.saveToServer(analysis);
+        this.markAsSynced(analysis.id);
+        console.log(`✅ Synced analysis ${analysis.id} to server`);
+      } catch (error) {
+        console.warn(`❌ Failed to sync analysis ${analysis.id}:`, error);
+      }
+    }
+  }
+
+  // Background sync a single analysis
+  async backgroundSync(analysisData) {
+    try {
+      await this.saveToServer(analysisData);
+      this.markAsSynced(analysisData.id);
+      console.log(`🔄 Background synced analysis ${analysisData.id}`);
+    } catch (error) {
+      console.warn(`⚠️ Background sync failed for ${analysisData.id}:`, error);
+    }
+  }
+
+  // Save to server (existing method)
   async saveToServer(analysisData) {
     const response = await fetch('/api/simple-analysis', {
       method: 'POST',
@@ -384,7 +460,7 @@
     return response.json();
   }
 
-  // Load from server
+  // Load from server (existing method)
   async loadFromServer() {
     const response = await fetch(`/api/simple-analysis/${this.appointmentId}`, {
       credentials: 'include'
@@ -398,7 +474,7 @@
     return data.analyses || [];
   }
 
-  // Save to localStorage (existing logic)
+  // Enhanced localStorage operations
   saveToLocalStorage(analysisData) {
     let savedData = { analyses: [], recordingCount: 0 };
     
@@ -411,15 +487,33 @@
       console.error('Error reading localStorage:', error);
     }
 
-    // Add new analysis
     savedData.analyses = savedData.analyses || [];
-    savedData.analyses.push(analysisData);
-    savedData.recordingCount = Math.max(savedData.recordingCount || 0, analysisData.id || 0);
+    
+    // Update existing or add new
+    const existingIndex = savedData.analyses.findIndex(a => a.id === analysisData.id);
+    if (existingIndex >= 0) {
+      savedData.analyses[existingIndex] = analysisData;
+    } else {
+      savedData.analyses.push(analysisData);
+    }
+    
+    savedData.recordingCount = Math.max(
+      savedData.recordingCount || 0, 
+      analysisData.id || 0
+    );
 
     localStorage.setItem(this.storageKey, JSON.stringify(savedData));
   }
 
-  // Load from localStorage (existing logic)
+  saveAllToLocalStorage(analyses) {
+    const savedData = {
+      analyses: analyses,
+      recordingCount: analyses.length > 0 ? Math.max(...analyses.map(a => a.id)) : 0,
+      lastSync: new Date().toISOString()
+    };
+    localStorage.setItem(this.storageKey, JSON.stringify(savedData));
+  }
+
   loadFromLocalStorage() {
     try {
       const saved = localStorage.getItem(this.storageKey);
@@ -433,8 +527,57 @@
     return [];
   }
 
-  // Delete analysis from both places
+  // Sync tracking methods
+  markAsSynced(analysisId) {
+    try {
+      const syncData = this.getSyncData();
+      syncData[analysisId] = {
+        synced: true,
+        lastSync: new Date().toISOString()
+      };
+      localStorage.setItem(this.syncedKey, JSON.stringify(syncData));
+    } catch (error) {
+      console.error('Error marking as synced:', error);
+    }
+  }
+
+  markAsUnsynced(analysisId) {
+    try {
+      const syncData = this.getSyncData();
+      syncData[analysisId] = {
+        synced: false,
+        lastAttempt: new Date().toISOString()
+      };
+      localStorage.setItem(this.syncedKey, JSON.stringify(syncData));
+    } catch (error) {
+      console.error('Error marking as unsynced:', error);
+    }
+  }
+
+  isSynced(analysisId) {
+    try {
+      const syncData = this.getSyncData();
+      return syncData[analysisId]?.synced === true;
+    } catch (error) {
+      console.error('Error checking sync status:', error);
+      return false;
+    }
+  }
+
+  getSyncData() {
+    try {
+      const data = localStorage.getItem(this.syncedKey);
+      return data ? JSON.parse(data) : {};
+    } catch (error) {
+      console.error('Error getting sync data:', error);
+      return {};
+    }
+  }
+
+  // Delete analysis from both places with proper sync
   async deleteAnalysis(analysisId) {
+    console.log(`🗑️ Deleting analysis ${analysisId}`);
+    
     // Delete from localStorage
     try {
       const saved = localStorage.getItem(this.storageKey);
@@ -443,6 +586,12 @@
         data.analyses = data.analyses.filter(a => a.id !== analysisId);
         localStorage.setItem(this.storageKey, JSON.stringify(data));
       }
+      
+      // Also remove sync tracking
+      const syncData = this.getSyncData();
+      delete syncData[analysisId];
+      localStorage.setItem(this.syncedKey, JSON.stringify(syncData));
+      
     } catch (error) {
       console.error('Error deleting from localStorage:', error);
     }
@@ -453,10 +602,98 @@
         method: 'DELETE',
         credentials: 'include'
       });
-      console.log('✅ Analysis deleted from cloud');
+      console.log('✅ Analysis deleted from server');
     } catch (error) {
-      console.warn('Failed to delete from cloud:', error);
+      console.warn('⚠️ Failed to delete from server:', error);
+      // Mark for deletion retry
+      this.markForDeletion(analysisId);
     }
+  }
+
+  markForDeletion(analysisId) {
+    try {
+      const syncData = this.getSyncData();
+      syncData[analysisId] = {
+        deleted: true,
+        deletedAt: new Date().toISOString()
+      };
+      localStorage.setItem(this.syncedKey, JSON.stringify(syncData));
+    } catch (error) {
+      console.error('Error marking for deletion:', error);
+    }
+  }
+
+  // Clear all analyses with proper sync
+  async clearAllAnalyses() {
+    console.log('🗑️ Clearing all analyses');
+    
+    // Clear localStorage
+    try {
+      localStorage.removeItem(this.storageKey);
+      localStorage.removeItem(this.syncedKey);
+    } catch (error) {
+      console.error('Error clearing localStorage:', error);
+    }
+
+    // Clear from server
+    try {
+      const analyses = await this.loadFromServer();
+      for (const analysis of analyses) {
+        await this.deleteAnalysis(analysis.id);
+      }
+      console.log('✅ All analyses cleared from server');
+    } catch (error) {
+      console.warn('⚠️ Failed to clear from server:', error);
+    }
+  }
+
+  // Utility method to check connection and sync status
+  async getStatus() {
+    try {
+      const localAnalyses = this.loadFromLocalStorage();
+      const unsyncedCount = localAnalyses.filter(a => !this.isSynced(a.id)).length;
+      
+      // Test server connection
+      const serverReachable = await this.testConnection();
+      
+      return {
+        localCount: localAnalyses.length,
+        unsyncedCount,
+        serverReachable,
+        lastSync: this.getLastSyncTime()
+      };
+    } catch (error) {
+      return {
+        localCount: 0,
+        unsyncedCount: 0,
+        serverReachable: false,
+        error: error.message
+      };
+    }
+  }
+
+  async testConnection() {
+    try {
+      const response = await fetch('/api/me', {
+        credentials: 'include'
+      });
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  getLastSyncTime() {
+    try {
+      const data = localStorage.getItem(this.storageKey);
+      if (data) {
+        const parsed = JSON.parse(data);
+        return parsed.lastSync;
+      }
+    } catch (error) {
+      console.error('Error getting last sync time:', error);
+    }
+    return null;
   }
 }
     // Audio Recording Functions
@@ -577,159 +814,286 @@
 }
 
     // AI Processing Functions
-    async function processAudioWithAI() {
-      if (!currentAudioBlob) {
-        alert('No audio recording found. Please record or upload audio first.');
-        return;
-      }
+    // Update the displayAIResults function
+async function displayAIResults(result) {
+  recordingCount++;
+  
+  console.log('📝 displayAIResults called');
+  console.log('🔄 analysisSync exists:', !!analysisSync);
+  console.log('📋 appointmentId:', appointmentId);
 
-      showProcessingStatus('Transcribing audio...');
-
-      try {
-        // Create FormData for audio upload
-        const formData = new FormData();
-        formData.append('audio', currentAudioBlob, 'recording.webm');
-        formData.append('appointmentId', appointmentId);
-
-        // Send to backend for AI processing
-        const response = await fetch('/api/process-audio', {
-          method: 'POST',
-          credentials: 'include',
-          body: formData
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to process audio');
-        }
-
-        const result = await response.json();
+  // Add this analysis to our collection
+  const analysisData = {
+    id: recordingCount,
+    timestamp: new Date().toISOString(), // Use ISO string for better consistency
+    transcript: result.transcript,
+    summary: result.summary,
+    keyPoints: result.keyPoints || [],
+    questions: result.questions || [],
+    actionItems: result.actionItems || []
+  };
+  
+  console.log('💾 About to call saveAnalysis');
         
-        hideProcessingStatus();
-        displayAIResults(result);
-
-      } catch (error) {
-        console.error('Error processing audio:', error);
-        hideProcessingStatus();
-        alert('Error processing audio: ' + error.message);
-      }
+  try {
+    const saveResult = await analysisSync.saveAnalysis(analysisData);
+    console.log('✅ saveAnalysis completed:', saveResult);
+    
+    // Show sync status
+    if (saveResult.synced) {
+      showSaveConfirmation('Analysis saved and synced to all devices');
+    } else {
+      showSaveConfirmation('Analysis saved locally - will sync when online');
     }
-
-    function showProcessingStatus(message) {
-      document.getElementById('processingText').textContent = message;
-      document.getElementById('processingStatus').classList.remove('hidden');
-    }
-
-    function hideProcessingStatus() {
-      document.getElementById('processingStatus').classList.add('hidden');
-    }
-
-    async function displayAIResults(result) {
-      recordingCount++;
-      
-      console.log('🔍 displayAIResults called');
-  console.log('🔍 analysisSync exists:', !!analysisSync);
-  console.log('🔍 appointmentId:', appointmentId);
-
-      // Add this analysis to our collection
-      const analysisData = {
-        id: recordingCount,
-        timestamp: new Date().toLocaleString(),
-        transcript: result.transcript,
-        summary: result.summary,
-        keyPoints: result.keyPoints || [],
-        questions: result.questions || [],
-        actionItems: result.actionItems || []
-      };
-      console.log('🔍 About to call saveAnalysis');
-
-      try {
-    await analysisSync.saveAnalysis(analysisData);
-    console.log('🔍 saveAnalysis completed');
   } catch (error) {
-    console.error('🔍 saveAnalysis failed:', error);
+    console.error('❌ saveAnalysis failed:', error);
+    showSaveConfirmation('Analysis saved locally only');
   }
 
-      allAnalyses.push(analysisData);
-      
-      // Create HTML for this specific analysis
-      const analysisElement = document.createElement('div');
-      analysisElement.className = 'border rounded-lg p-4 bg-gray-50';
-      analysisElement.id = `analysis-${recordingCount}`;
-      
-      analysisElement.innerHTML = `
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold text-gray-800">Recording ${recordingCount}</h3>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-500">${analysisData.timestamp}</span>
-            <button onclick="removeAnalysis(${recordingCount})" class="text-red-500 hover:text-red-600 text-sm">Remove</button>
-          </div>
-        </div>
-        
-        <!-- Transcript -->
-        <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">📝 Transcript</h4>
-          <div class="bg-white p-3 rounded border text-sm max-h-32 overflow-y-auto">
-            <p class="whitespace-pre-wrap">${result.transcript}</p>
-          </div>
-        </div>
+  allAnalyses.push(analysisData);
+  
+  // Create HTML for this specific analysis (existing code)
+  const analysisElement = document.createElement('div');
+  analysisElement.className = 'border rounded-lg p-4 bg-gray-50';
+  analysisElement.id = `analysis-${recordingCount}`;
+  
+  // Add sync status indicator
+  const syncStatus = analysisData.synced !== false ? 
+    '<span class="text-green-600 text-xs">☁️ Synced</span>' : 
+    '<span class="text-orange-600 text-xs">📱 Local only</span>';
+  
+  analysisElement.innerHTML = `
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-semibold text-gray-800">Recording ${recordingCount}</h3>
+      <div class="flex items-center gap-2">
+        ${syncStatus}
+        <span class="text-sm text-gray-500">${new Date(analysisData.timestamp).toLocaleString()}</span>
+        <button onclick="removeAnalysis(${recordingCount})" class="text-red-500 hover:text-red-600 text-sm">Remove</button>
+      </div>
+    </div>
+    
+    <!-- Transcript -->
+    <div class="mb-4">
+      <h4 class="font-medium mb-2 text-gray-700">🎤 Transcript</h4>
+      <div class="bg-white p-3 rounded border text-sm max-h-32 overflow-y-auto">
+        <p class="whitespace-pre-wrap">${result.transcript}</p>
+      </div>
+    </div>
 
-        <!-- Summary -->
-        <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">📋 Summary</h4>
-          <div class="bg-blue-50 p-3 rounded border text-sm">
-            <div class="space-y-1">
-              ${result.summary.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
-            </div>
-          </div>
+    <!-- Summary -->
+    <div class="mb-4">
+      <h4 class="font-medium mb-2 text-gray-700">📋 Summary</h4>
+      <div class="bg-blue-50 p-3 rounded border text-sm">
+        <div class="space-y-1">
+          ${result.summary.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
         </div>
+      </div>
+    </div>
 
-        <!-- Key Points -->
-        ${result.keyPoints && result.keyPoints.length > 0 ? `
-        <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">🔍 Key Points</h4>
-          <div class="bg-purple-50 p-3 rounded border text-sm">
-            <ul class="space-y-1">
-              ${result.keyPoints.map(point => `<li class="flex items-start gap-2"><span class="text-purple-600">•</span><span>${point}</span></li>`).join('')}
-            </ul>
-          </div>
-        </div>` : ''}
+    <!-- Key Points -->
+    ${result.keyPoints && result.keyPoints.length > 0 ? `
+    <div class="mb-4">
+      <h4 class="font-medium mb-2 text-gray-700">🔍 Key Points</h4>
+      <div class="bg-purple-50 p-3 rounded border text-sm">
+        <ul class="space-y-1">
+          ${result.keyPoints.map(point => `<li class="flex items-start gap-2"><span class="text-purple-600">•</span><span>${point}</span></li>`).join('')}
+        </ul>
+      </div>
+    </div>` : ''}
 
-        <!-- Suggested Questions -->
-        <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">❓ Suggested Follow-up Questions</h4>
-          <div class="bg-green-50 p-3 rounded border text-sm">
-            <ul class="space-y-1">
-              ${result.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600">•</span><span>${q}</span></li>`).join('')}
-            </ul>
-          </div>
-        </div>
+    <!-- Suggested Questions -->
+    <div class="mb-4">
+      <h4 class="font-medium mb-2 text-gray-700">❓ Suggested Follow-up Questions</h4>
+      <div class="bg-green-50 p-3 rounded border text-sm">
+        <ul class="space-y-1">
+          ${result.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600">•</span><span>${q}</span></li>`).join('')}
+        </ul>
+      </div>
+    </div>
 
-        <!-- Action Items -->
-        <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">✅ Action Items & Next Steps</h4>
-          <div class="bg-yellow-50 p-3 rounded border text-sm">
-            <ul class="space-y-1">
-              ${result.actionItems.map(item => `<li class="flex items-start gap-2"><span class="text-yellow-600">•</span><span>${item}</span></li>`).join('')}
-            </ul>
-          </div>
-        </div>
-      `;
+    <!-- Action Items -->
+    <div class="mb-4">
+      <h4 class="font-medium mb-2 text-gray-700">✅ Action Items & Next Steps</h4>
+      <div class="bg-yellow-50 p-3 rounded border text-sm">
+        <ul class="space-y-1">
+          ${result.actionItems.map(item => `<li class="flex items-start gap-2"><span class="text-yellow-600">•</span><span>${item}</span></li>`).join('')}
+        </ul>
+      </div>
+    </div>
+  `;
+  
+  // Add to container
+  const container = document.getElementById('aiAnalysisContainer');
+  container.appendChild(analysisElement);
+  
+  // Show the AI section and update count
+  const aiSection = document.getElementById('aiAnalysisSection');
+  aiSection.classList.remove('hidden');
+  updateAnalysisCount();
+  
+  // Scroll to the new analysis
+  analysisElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Update the loadAnalysesFromStorage function
+async function loadAnalysesFromStorage() {
+  try {
+    console.log('📥 Loading analyses with cross-device sync...');
+    
+    // Load with improved sync logic
+    const analyses = await analysisSync.loadAnalyses();
+    
+    if (analyses.length > 0) {
+      allAnalyses = analyses;
+      recordingCount = Math.max(...analyses.map(a => a.id), 0);
       
-      // Add to container
-      const container = document.getElementById('aiAnalysisContainer');
-      container.appendChild(analysisElement);
+      // Display all analyses
+      analyses.forEach(analysis => {
+        displayStoredAnalysis(analysis);
+      });
       
-      // Show the AI section and update count
-      const aiSection = document.getElementById('aiAnalysisSection');
-      aiSection.classList.remove('hidden');
+      // Show section
+      document.getElementById('aiAnalysisSection').classList.remove('hidden');
       updateAnalysisCount();
       
-      // Scroll to the new analysis
-      analysisElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      console.log(`✅ Loaded ${analyses.length} analyses with cross-device sync`);
       
-      // Show brief save confirmation
-      showSaveConfirmation();
+      // Show sync status
+      const status = await analysisSync.getStatus();
+      if (status.unsyncedCount > 0) {
+        showSaveConfirmation(`${status.unsyncedCount} analyses pending sync`);
+      }
     }
+  } catch (error) {
+    console.error('❌ Error loading analyses:', error);
+  }
+}
+
+// Update the removeAnalysis function
+async function removeAnalysis(analysisId) {
+  if (!confirm('Remove this analysis? This will delete it from all your devices.')) {
+    return;
+  }
+
+  try {
+    // Remove from server and localStorage with proper sync
+    await analysisSync.deleteAnalysis(analysisId);
+    
+    // Remove from local array
+    allAnalyses = allAnalyses.filter(a => a.id !== analysisId);
+    
+    // Remove from UI
+    const element = document.getElementById(`analysis-${analysisId}`);
+    if (element) {
+      element.remove();
+    }
+    
+    // Update UI
+    updateAnalysisCount();
+    if (allAnalyses.length === 0) {
+      document.getElementById('aiAnalysisSection').classList.add('hidden');
+    }
+    
+    showSaveConfirmation('Analysis deleted from all devices');
+  } catch (error) {
+    console.error('❌ Error removing analysis:', error);
+    showSaveConfirmation('Error deleting analysis');
+  }
+}
+
+// Update the clearAllAnalysis function
+async function clearAllAnalysis() {
+  if (confirm('Clear all AI analysis results? This will remove them from all your devices and cannot be undone.')) {
+    try {
+      await analysisSync.clearAllAnalyses();
+      
+      allAnalyses = [];
+      recordingCount = 0;
+      document.getElementById('aiAnalysisContainer').innerHTML = '';
+      document.getElementById('aiAnalysisSection').classList.add('hidden');
+      
+      showSaveConfirmation('All analyses cleared from all devices');
+    } catch (error) {
+      console.error('❌ Error clearing analyses:', error);
+      showSaveConfirmation('Error clearing analyses');
+    }
+  }
+}
+
+// Update the showSaveConfirmation function to handle different messages
+function showSaveConfirmation(message = '✓ Analysis saved automatically') {
+  // Create temporary notification
+  const notification = document.createElement('div');
+  notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50 max-w-xs text-sm';
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.remove();
+    }
+  }, 3000);
+}
+
+// Add a sync status indicator to the page
+function addSyncStatusIndicator() {
+  const header = document.querySelector('.bg-blue-500');
+  const statusDiv = document.createElement('div');
+  statusDiv.id = 'syncStatus';
+  statusDiv.className = 'text-xs text-white opacity-75';
+  header.appendChild(statusDiv);
+  
+  updateSyncStatus();
+}
+
+async function updateSyncStatus() {
+  try {
+    const status = await analysisSync.getStatus();
+    const statusDiv = document.getElementById('syncStatus');
+    
+    if (!statusDiv) return;
+    
+    if (!status.serverReachable) {
+      statusDiv.textContent = '📱 Offline - changes saved locally';
+      statusDiv.className = 'text-xs text-orange-200';
+    } else if (status.unsyncedCount > 0) {
+      statusDiv.textContent = `🔄 ${status.unsyncedCount} changes syncing...`;
+      statusDiv.className = 'text-xs text-yellow-200';
+    } else if (status.localCount > 0) {
+      statusDiv.textContent = '☁️ All changes synced';
+      statusDiv.className = 'text-xs text-green-200';
+    } else {
+      statusDiv.textContent = '';
+    }
+  } catch (error) {
+    console.error('Error updating sync status:', error);
+  }
+}
+
+// Update the DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', async function() {
+  console.log('🔄 DOMContentLoaded - appointmentId:', appointmentId);
+  checkAuth();
+  loadAppointmentDetails();
+  loadVisitNotes();
+  
+  // Initialize analysis sync with improved version
+  console.log('🔄 Creating enhanced SimpleAnalysisSync...');
+  analysisSync = new SimpleAnalysisSync(appointmentId);
+  console.log('✅ analysisSync created:', !!analysisSync);
+  
+  // Load existing analyses with cross-device sync
+  await loadAnalysesFromStorage();
+  
+  // Add sync status indicator
+  addSyncStatusIndicator();
+  
+  // Periodically update sync status
+  setInterval(updateSyncStatus, 30000); // Update every 30 seconds
+  
+  console.log('✅ Visit page initialized with enhanced cross-device sync');
+});
 
     function updateAnalysisCount() {
       const countElement = document.getElementById('analysisCount');
