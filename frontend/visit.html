@@ -2,80 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Visit Details – ClearVisit AI</title>
+  <title>Visit Details - ClearVisit AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
+  
   <!-- PWA Manifest and Meta Tags -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#667eea">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#667eea">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ClearVisit AI">
+  <link rel="apple-touch-icon" href="/heart-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-<!-- iOS PWA Support -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="ClearVisit AI">
-<link rel="apple-touch-icon" href="/heart-icon.png">
-
-<!-- Android PWA Support -->
-<meta name="mobile-web-app-capable" content="yes">
-
-<!-- Windows PWA Support -->
-<meta name="msapplication-TileColor" content="#667eea">
-<meta name="msapplication-TileImage" content="/heart-icon.png">
-
-<!-- Viewport for mobile -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
-<style>
-  /* Audio recording controls - vertical stack */
-  .bg-gray-50.rounded-lg {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 0.75rem !important;
-  }
-  
-  /* Consistent button sizing for all audio buttons */
-  #recordBtn, #playBtn, #processBtn {
-    background: #3b82f6 !important;
-    color: white !important;
-    font-size: 0.875rem !important;
-    padding: 0.75rem 1.5rem !important;
-    min-width: 180px !important;
-    height: 48px !important;
-    border-radius: 0.5rem !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0.5rem !important;
-  }
-  
-  /* Record button stays red */
-  #recordBtn {
-    background: #ef4444 !important;
-  }
-  
-  /* Process button green */
-  #processBtn {
-    background: #3b82f6 !important;
-  }
-  
-  /* Recording status centered */
-  #recordingStatus {
-    text-align: center !important;
-  }
-  
-  /* Make edit button blue like header */
-  button[onclick="editAppointment()"] {
-    background: #3b82f6 !important;
-    color: white !important;
-  }
-  
-  /* Smaller visit detail buttons */
-  .appointment-card .flex.justify-between button {
-    padding: 0.375rem 0.75rem !important;
-    font-size: 0.75rem !important;
-  }
-</style>
+  <style>
+    /* Custom styles for audio controls */
+    #audioControls {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    
+    #recordBtn, #playBtn, #processBtn {
+      min-width: 140px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+  </style>
 </head>
 <body class="bg-gray-100">
 
@@ -103,8 +59,8 @@
         <div class="flex items-center justify-between mb-4">
           <h1 class="text-3xl font-bold text-gray-800">Visit Details</h1>
           <div class="flex gap-2">
-            <button onclick="editAppointment()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
-              Edit Appt
+            <button onclick="editAppointment()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+              Edit
             </button>
             <button onclick="deleteCurrentAppointment()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
               Delete
@@ -113,19 +69,17 @@
         </div>
         
         <div id="appointmentDetails" class="grid md:grid-cols-2 gap-6">
-          <!-- Details will be populated by JavaScript -->
+          <!-- Details populated by JavaScript -->
         </div>
       </div>
 
       <!-- Audio Recording Section -->
       <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
-          Record Your Visit
-        </h2>
+        <h2 class="text-xl font-semibold mb-4">Record Your Visit</h2>
         
         <div class="space-y-4">
           <!-- Recording Controls -->
-          <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+          <div class="flex flex-col items-center gap-4 p-4 bg-gray-50 rounded-lg">
             <button 
               id="recordBtn" 
               onclick="toggleRecording()" 
@@ -140,13 +94,22 @@
               <span>Recording... <span id="recordingTimer">00:00</span></span>
             </div>
             
-            <button 
-              id="playBtn" 
-              onclick="playRecording()" 
-              class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 hidden"
-            >
-              Play
-            </button>
+            <div id="audioControls" class="hidden flex gap-2">
+              <button 
+                id="playBtn" 
+                onclick="playRecording()" 
+                class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                Play
+              </button>
+              <button 
+                id="processBtn" 
+                onclick="processAudioWithAI()" 
+                class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+              >
+                Analyze with AI
+              </button>
+            </div>
           </div>
 
           <!-- Audio Player -->
@@ -164,9 +127,9 @@
           <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
             <input type="file" id="audioUpload" accept="audio/*" class="hidden" onchange="handleAudioUpload(event)">
             <button onclick="document.getElementById('audioUpload').click()" class="text-blue-500 hover:text-blue-600">
-              📁 Or upload an existing audio file
+              📁 Upload Audio File
             </button>
-            <p class="text-sm text-gray-500 mt-2">Supports MP3, WAV, M4A, and other audio formats</p>
+            <p class="text-sm text-gray-500 mt-2">Supports MP3, WAV, M4A, and other formats</p>
           </div>
         </div>
       </div>
@@ -175,28 +138,25 @@
       <div id="aiAnalysisSection" class="hidden bg-white rounded-lg shadow p-6 mb-6">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold flex items-center gap-2">
-             AI Analysis Results
+            AI Analysis Results
             <span id="analysisCount" class="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full"></span>
           </h2>
           <button onclick="clearAllAnalysis()" class="text-red-500 hover:text-red-600 text-sm border border-red-200 px-3 py-1 rounded">
             Clear All
           </button>
         </div>
-
-        <div id="aiAnalysisContainer" class="space-y-6">
-          <!-- Multiple analysis results will be added here -->
-        </div>
+        <div id="aiAnalysisContainer" class="space-y-6"></div>
       </div>
 
       <!-- Manual Visit Notes Section -->
       <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-xl font-semibold mb-4">📝 Manual Visit Notes</h2>
+        <h2 class="text-xl font-semibold mb-4">Manual Visit Notes</h2>
         <div class="space-y-4">
           <div>
             <label class="block font-medium text-gray-700 mb-2">Additional Notes</label>
             <textarea 
               id="manualNotes" 
-              placeholder="Add any additional notes or observations not captured in the recording..."
+              placeholder="Add any notes not captured in the recording..."
               class="w-full border rounded px-4 py-3 h-32 resize-vertical"
             ></textarea>
           </div>
@@ -205,7 +165,7 @@
             <label class="block font-medium text-gray-700 mb-2">Prescriptions & Medications</label>
             <textarea 
               id="prescriptions" 
-              placeholder="New medications prescribed, dosage changes, etc."
+              placeholder="New medications, dosage changes, etc."
               class="w-full border rounded px-4 py-3 h-24 resize-vertical"
             ></textarea>
           </div>
@@ -214,14 +174,14 @@
             <label class="block font-medium text-gray-700 mb-2">Follow-up Actions</label>
             <textarea 
               id="followUp" 
-              placeholder="Next appointments needed, tests to schedule, lifestyle changes recommended, etc."
+              placeholder="Next appointments, tests to schedule, lifestyle changes, etc."
               class="w-full border rounded px-4 py-3 h-24 resize-vertical"
             ></textarea>
           </div>
 
           <div class="flex justify-end">
             <button onclick="saveVisitNotes()" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
-              Save Visit Notes
+              Save Notes
             </button>
           </div>
         </div>
@@ -234,7 +194,7 @@
           <a href="/profile.html" class="text-blue-500 hover:text-blue-600 text-sm">Edit Profile →</a>
         </div>
         <div id="profileSummary" class="grid md:grid-cols-2 gap-4 text-sm">
-          <!-- Profile summary will be populated by JavaScript -->
+          <!-- Profile summary populated by JavaScript -->
         </div>
       </div>
     </div>
@@ -288,1369 +248,16 @@
 
         <div class="flex justify-end gap-2 mt-4">
           <button type="button" onclick="closeEditModal()" class="px-4 py-2 border rounded hover:bg-gray-100">Cancel</button>
-          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Update Appointment</button>
+          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Update</button>
         </div>
       </form>
     </div>
   </div>
 
-  <script>
-    // Check authentication
-    async function checkAuth() {
-  try {
-    const res = await fetch('/api/me', {
-      credentials: 'include'
-    });
-    if (!res.ok) {
-      window.location.href = '/login.html';
-    }
-  } catch (error) {
-    window.location.href = '/login.html';
-  }
-}
+  <!-- Load JavaScript files -->
+  <script src="/js/visit-sync.js"></script>
+  <script src="/js/visit-audio.js"></script>
+  <script src="/js/visit-main.js"></script>
 
-    let analysisSync;
-    let currentAppointment = null;
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let recordingTimer = null;
-    let recordingStartTime = null;
-    let currentAudioBlob = null;
-    let recordingCount = 0;
-    let allAnalyses = []; // Store all AI analyses
-
-    // Get appointment ID from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const appointmentId = urlParams.get('id');
-
-    if (!appointmentId) {
-      showError("No appointment ID provided");
-    }
-    class SimpleAnalysisSync {
-  constructor(appointmentId) {
-    this.appointmentId = appointmentId;
-    this.storageKey = `ai_analyses_${appointmentId}`;
-    this.syncedKey = `synced_${appointmentId}`;
-  }
-
-  // Save analysis to both localStorage AND server with proper sync
-  async saveAnalysis(analysisData) {
-    console.log('💾 Saving analysis:', analysisData.id);
-    
-    // Always save to localStorage first (immediate)
-    this.saveToLocalStorage(analysisData);
-    
-    // Try to save to server and mark as synced
-    try {
-      await this.saveToServer(analysisData);
-      this.markAsSynced(analysisData.id);
-      console.log('✅ Analysis saved to cloud and marked as synced');
-      return { success: true, synced: true };
-    } catch (error) {
-      console.warn('⚠️ Failed to save to cloud, saved locally only:', error);
-      this.markAsUnsynced(analysisData.id);
-      return { success: true, synced: false };
-    }
-  }
-
-  // Load analyses with proper merging from both sources
-  async loadAnalyses() {
-    console.log('📥 Loading analyses from all sources...');
-    
-    let serverAnalyses = [];
-    let localAnalyses = [];
-    let mergedAnalyses = [];
-
-    // Try to load from server first
-    try {
-      serverAnalyses = await this.loadFromServer();
-      console.log(`📡 Loaded ${serverAnalyses.length} analyses from server`);
-    } catch (error) {
-      console.warn('⚠️ Failed to load from server:', error);
-    }
-    
-    // Load from localStorage
-    localAnalyses = this.loadFromLocalStorage();
-    console.log(`💻 Loaded ${localAnalyses.length} analyses from localStorage`);
-
-    // Merge analyses (server takes precedence, but include unsynced local items)
-    const analysisMap = new Map();
-    
-    // Add server analyses first (these are authoritative)
-    serverAnalyses.forEach(analysis => {
-      analysisMap.set(analysis.id, { ...analysis, source: 'server' });
-    });
-    
-    // Add local analyses that aren't on server or are newer
-    localAnalyses.forEach(analysis => {
-      const existing = analysisMap.get(analysis.id);
-      if (!existing) {
-        // This analysis doesn't exist on server, include it
-        analysisMap.set(analysis.id, { ...analysis, source: 'local' });
-      } else if (new Date(analysis.timestamp) > new Date(existing.timestamp)) {
-        // Local version is newer, use it but try to sync
-        analysisMap.set(analysis.id, { ...analysis, source: 'local-newer' });
-        this.backgroundSync(analysis);
-      }
-    });
-
-    mergedAnalyses = Array.from(analysisMap.values()).sort((a, b) => a.id - b.id);
-    
-    // Update localStorage with merged data
-    this.saveAllToLocalStorage(mergedAnalyses);
-    
-    // Sync any unsynced local items in background
-    await this.syncPendingAnalyses();
-    
-    console.log(`✅ Merged ${mergedAnalyses.length} total analyses`);
-    return mergedAnalyses;
-  }
-
-  // Background sync for unsynced analyses
-  async syncPendingAnalyses() {
-    const localAnalyses = this.loadFromLocalStorage();
-    const unsyncedAnalyses = localAnalyses.filter(analysis => 
-      !this.isSynced(analysis.id)
-    );
-
-    if (unsyncedAnalyses.length === 0) return;
-
-    console.log(`🔄 Syncing ${unsyncedAnalyses.length} pending analyses...`);
-    
-    for (const analysis of unsyncedAnalyses) {
-      try {
-        await this.saveToServer(analysis);
-        this.markAsSynced(analysis.id);
-        console.log(`✅ Synced analysis ${analysis.id} to server`);
-      } catch (error) {
-        console.warn(`❌ Failed to sync analysis ${analysis.id}:`, error);
-      }
-    }
-  }
-
-  // Background sync a single analysis
-  async backgroundSync(analysisData) {
-    try {
-      await this.saveToServer(analysisData);
-      this.markAsSynced(analysisData.id);
-      console.log(`🔄 Background synced analysis ${analysisData.id}`);
-    } catch (error) {
-      console.warn(`⚠️ Background sync failed for ${analysisData.id}:`, error);
-    }
-  }
-
-  // Save to server (existing method)
-  async saveToServer(analysisData) {
-    const response = await fetch('/api/simple-analysis', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        appointmentId: this.appointmentId,
-        analysisData: analysisData
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
-    }
-
-    return response.json();
-  }
-
-  // Load from server (existing method)
-  async loadFromServer() {
-    const response = await fetch(`/api/simple-analysis/${this.appointmentId}`, {
-      credentials: 'include'
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.analyses || [];
-  }
-
-  // Enhanced localStorage operations
-  saveToLocalStorage(analysisData) {
-    let savedData = { analyses: [], recordingCount: 0 };
-    
-    try {
-      const existing = localStorage.getItem(this.storageKey);
-      if (existing) {
-        savedData = JSON.parse(existing);
-      }
-    } catch (error) {
-      console.error('Error reading localStorage:', error);
-    }
-
-    savedData.analyses = savedData.analyses || [];
-    
-    // Update existing or add new
-    const existingIndex = savedData.analyses.findIndex(a => a.id === analysisData.id);
-    if (existingIndex >= 0) {
-      savedData.analyses[existingIndex] = analysisData;
-    } else {
-      savedData.analyses.push(analysisData);
-    }
-    
-    savedData.recordingCount = Math.max(
-      savedData.recordingCount || 0, 
-      analysisData.id || 0
-    );
-
-    localStorage.setItem(this.storageKey, JSON.stringify(savedData));
-  }
-
-  saveAllToLocalStorage(analyses) {
-    const savedData = {
-      analyses: analyses,
-      recordingCount: analyses.length > 0 ? Math.max(...analyses.map(a => a.id)) : 0,
-      lastSync: new Date().toISOString()
-    };
-    localStorage.setItem(this.storageKey, JSON.stringify(savedData));
-  }
-
-  loadFromLocalStorage() {
-    try {
-      const saved = localStorage.getItem(this.storageKey);
-      if (saved) {
-        const data = JSON.parse(saved);
-        return data.analyses || [];
-      }
-    } catch (error) {
-      console.error('Error loading from localStorage:', error);
-    }
-    return [];
-  }
-
-  // Sync tracking methods
-  markAsSynced(analysisId) {
-    try {
-      const syncData = this.getSyncData();
-      syncData[analysisId] = {
-        synced: true,
-        lastSync: new Date().toISOString()
-      };
-      localStorage.setItem(this.syncedKey, JSON.stringify(syncData));
-    } catch (error) {
-      console.error('Error marking as synced:', error);
-    }
-  }
-
-  markAsUnsynced(analysisId) {
-    try {
-      const syncData = this.getSyncData();
-      syncData[analysisId] = {
-        synced: false,
-        lastAttempt: new Date().toISOString()
-      };
-      localStorage.setItem(this.syncedKey, JSON.stringify(syncData));
-    } catch (error) {
-      console.error('Error marking as unsynced:', error);
-    }
-  }
-
-  isSynced(analysisId) {
-    try {
-      const syncData = this.getSyncData();
-      return syncData[analysisId]?.synced === true;
-    } catch (error) {
-      console.error('Error checking sync status:', error);
-      return false;
-    }
-  }
-
-  getSyncData() {
-    try {
-      const data = localStorage.getItem(this.syncedKey);
-      return data ? JSON.parse(data) : {};
-    } catch (error) {
-      console.error('Error getting sync data:', error);
-      return {};
-    }
-  }
-
-  // Delete analysis from both places with proper sync
-  async deleteAnalysis(analysisId) {
-    console.log(`🗑️ Deleting analysis ${analysisId}`);
-    
-    // Delete from localStorage
-    try {
-      const saved = localStorage.getItem(this.storageKey);
-      if (saved) {
-        const data = JSON.parse(saved);
-        data.analyses = data.analyses.filter(a => a.id !== analysisId);
-        localStorage.setItem(this.storageKey, JSON.stringify(data));
-      }
-      
-      // Also remove sync tracking
-      const syncData = this.getSyncData();
-      delete syncData[analysisId];
-      localStorage.setItem(this.syncedKey, JSON.stringify(syncData));
-      
-    } catch (error) {
-      console.error('Error deleting from localStorage:', error);
-    }
-
-    // Delete from server
-    try {
-      await fetch(`/api/simple-analysis/${this.appointmentId}/${analysisId}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      console.log('✅ Analysis deleted from server');
-    } catch (error) {
-      console.warn('⚠️ Failed to delete from server:', error);
-      // Mark for deletion retry
-      this.markForDeletion(analysisId);
-    }
-  }
-
-  markForDeletion(analysisId) {
-    try {
-      const syncData = this.getSyncData();
-      syncData[analysisId] = {
-        deleted: true,
-        deletedAt: new Date().toISOString()
-      };
-      localStorage.setItem(this.syncedKey, JSON.stringify(syncData));
-    } catch (error) {
-      console.error('Error marking for deletion:', error);
-    }
-  }
-
-  // Clear all analyses with proper sync
-  async clearAllAnalyses() {
-    console.log('🗑️ Clearing all analyses');
-    
-    // Clear localStorage
-    try {
-      localStorage.removeItem(this.storageKey);
-      localStorage.removeItem(this.syncedKey);
-    } catch (error) {
-      console.error('Error clearing localStorage:', error);
-    }
-
-    // Clear from server
-    try {
-      const analyses = await this.loadFromServer();
-      for (const analysis of analyses) {
-        await this.deleteAnalysis(analysis.id);
-      }
-      console.log('✅ All analyses cleared from server');
-    } catch (error) {
-      console.warn('⚠️ Failed to clear from server:', error);
-    }
-  }
-
-  // Utility method to check connection and sync status
-  async getStatus() {
-    try {
-      const localAnalyses = this.loadFromLocalStorage();
-      const unsyncedCount = localAnalyses.filter(a => !this.isSynced(a.id)).length;
-      
-      // Test server connection
-      const serverReachable = await this.testConnection();
-      
-      return {
-        localCount: localAnalyses.length,
-        unsyncedCount,
-        serverReachable,
-        lastSync: this.getLastSyncTime()
-      };
-    } catch (error) {
-      return {
-        localCount: 0,
-        unsyncedCount: 0,
-        serverReachable: false,
-        error: error.message
-      };
-    }
-  }
-
-  async testConnection() {
-    try {
-      const response = await fetch('/api/me', {
-        credentials: 'include'
-      });
-      return response.ok;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  getLastSyncTime() {
-    try {
-      const data = localStorage.getItem(this.storageKey);
-      if (data) {
-        const parsed = JSON.parse(data);
-        return parsed.lastSync;
-      }
-    } catch (error) {
-      console.error('Error getting last sync time:', error);
-    }
-    return null;
-  }
-}
-    // Audio Recording Functions
-    async function toggleRecording() {
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        stopRecording();
-      } else {
-        startRecording();
-      }
-    }
-
-    async function startRecording() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            sampleRate: 44100
-          } 
-        });
-        
-        mediaRecorder = new MediaRecorder(stream, {
-          mimeType: 'audio/webm;codecs=opus'
-        });
-        
-        audioChunks = [];
-        
-        mediaRecorder.ondataavailable = (event) => {
-          audioChunks.push(event.data);
-        };
-        
-        mediaRecorder.onstop = () => {
-  const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-  currentAudioBlob = audioBlob;
-  const audioUrl = URL.createObjectURL(audioBlob);
-  const audioPlayer = document.getElementById('audioPlayer');
-  audioPlayer.src = audioUrl;
-  audioPlayer.classList.remove('hidden');
-  
-  // Show play button only now that we have audio
-  document.getElementById('playBtn').classList.remove('hidden');
-  
-  // Stop all tracks to release microphone
-  stream.getTracks().forEach(track => track.stop());
-};
-        
-        mediaRecorder.start();
-        updateRecordingUI(true);
-        startTimer();
-        
-      } catch (err) {
-        console.error('Error accessing microphone:', err);
-        alert('Could not access microphone. Please check permissions.');
-      }
-    }
-
-    function stopRecording() {
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        updateRecordingUI(false);
-        stopTimer();
-      }
-    }
-
-    function updateRecordingUI(isRecording) {
-      const recordBtn = document.getElementById('recordBtn');
-      const recordIcon = document.getElementById('recordIcon');
-      const recordText = document.getElementById('recordText');
-      const recordingStatus = document.getElementById('recordingStatus');
-      
-      if (isRecording) {
-        recordBtn.className = 'bg-gray-500 text-white px-6 py-3 rounded-full hover:bg-gray-600 transition-all flex items-center gap-2';
-        recordIcon.textContent = '⏹️';
-        recordText.textContent = 'Stop Recording';
-        recordingStatus.classList.remove('hidden');
-      } else {
-        recordBtn.className = 'bg-red-500 text-white px-6 py-3 rounded-full hover:bg-red-600 transition-all flex items-center gap-2';
-        recordIcon.textContent = '🔴';
-        recordText.textContent = 'Start Recording';
-        recordingStatus.classList.add('hidden');
-      }
-    }
-
-    function startTimer() {
-      recordingStartTime = Date.now();
-      recordingTimer = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
-        const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
-        const seconds = (elapsed % 60).toString().padStart(2, '0');
-        document.getElementById('recordingTimer').textContent = `${minutes}:${seconds}`;
-      }, 1000);
-    }
-
-    function stopTimer() {
-      if (recordingTimer) {
-        clearInterval(recordingTimer);
-        recordingTimer = null;
-      }
-    }
-
-    function playRecording() {
-      const audioPlayer = document.getElementById('audioPlayer');
-      audioPlayer.play();
-    }
-
-    function handleAudioUpload(event) {
-  const file = event.target.files[0];
-  if (file) {
-    currentAudioBlob = file;
-    const audioUrl = URL.createObjectURL(file);
-    const audioPlayer = document.getElementById('audioPlayer');
-    audioPlayer.src = audioUrl;
-    audioPlayer.classList.remove('hidden');
-    
-    // Show play button since we now have audio to play
-    document.getElementById('playBtn').classList.remove('hidden');
-  }
-}
-
-    // AI Processing Functions
-    // Update the displayAIResults function
-async function displayAIResults(result) {
-  recordingCount++;
-  
-  console.log('📝 displayAIResults called');
-  console.log('🔄 analysisSync exists:', !!analysisSync);
-  console.log('📋 appointmentId:', appointmentId);
-
-  // Add this analysis to our collection
-  const analysisData = {
-    id: recordingCount,
-    timestamp: new Date().toISOString(), // Use ISO string for better consistency
-    transcript: result.transcript,
-    summary: result.summary,
-    keyPoints: result.keyPoints || [],
-    questions: result.questions || [],
-    actionItems: result.actionItems || []
-  };
-  
-  console.log('💾 About to call saveAnalysis');
-        
-  try {
-    const saveResult = await analysisSync.saveAnalysis(analysisData);
-    console.log('✅ saveAnalysis completed:', saveResult);
-    
-    // Show sync status
-    if (saveResult.synced) {
-      showSaveConfirmation('Analysis saved and synced to all devices');
-    } else {
-      showSaveConfirmation('Analysis saved locally - will sync when online');
-    }
-  } catch (error) {
-    console.error('❌ saveAnalysis failed:', error);
-    showSaveConfirmation('Analysis saved locally only');
-  }
-
-  allAnalyses.push(analysisData);
-  
-  // Create HTML for this specific analysis (existing code)
-  const analysisElement = document.createElement('div');
-  analysisElement.className = 'border rounded-lg p-4 bg-gray-50';
-  analysisElement.id = `analysis-${recordingCount}`;
-  
-  // Add sync status indicator
-  const syncStatus = analysisData.synced !== false ? 
-    '<span class="text-green-600 text-xs">☁️ Synced</span>' : 
-    '<span class="text-orange-600 text-xs">📱 Local only</span>';
-  
-  analysisElement.innerHTML = `
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold text-gray-800">Recording ${recordingCount}</h3>
-      <div class="flex items-center gap-2">
-        ${syncStatus}
-        <span class="text-sm text-gray-500">${new Date(analysisData.timestamp).toLocaleString()}</span>
-        <button onclick="removeAnalysis(${recordingCount})" class="text-red-500 hover:text-red-600 text-sm">Remove</button>
-      </div>
-    </div>
-    
-    <!-- Transcript -->
-    <div class="mb-4">
-      <h4 class="font-medium mb-2 text-gray-700">🎤 Transcript</h4>
-      <div class="bg-white p-3 rounded border text-sm max-h-32 overflow-y-auto">
-        <p class="whitespace-pre-wrap">${result.transcript}</p>
-      </div>
-    </div>
-
-    <!-- Summary -->
-    <div class="mb-4">
-      <h4 class="font-medium mb-2 text-gray-700">📋 Summary</h4>
-      <div class="bg-blue-50 p-3 rounded border text-sm">
-        <div class="space-y-1">
-          ${result.summary.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
-        </div>
-      </div>
-    </div>
-
-    <!-- Key Points -->
-    ${result.keyPoints && result.keyPoints.length > 0 ? `
-    <div class="mb-4">
-      <h4 class="font-medium mb-2 text-gray-700">🔍 Key Points</h4>
-      <div class="bg-purple-50 p-3 rounded border text-sm">
-        <ul class="space-y-1">
-          ${result.keyPoints.map(point => `<li class="flex items-start gap-2"><span class="text-purple-600">•</span><span>${point}</span></li>`).join('')}
-        </ul>
-      </div>
-    </div>` : ''}
-
-    <!-- Suggested Questions -->
-    <div class="mb-4">
-      <h4 class="font-medium mb-2 text-gray-700">❓ Suggested Follow-up Questions</h4>
-      <div class="bg-green-50 p-3 rounded border text-sm">
-        <ul class="space-y-1">
-          ${result.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600">•</span><span>${q}</span></li>`).join('')}
-        </ul>
-      </div>
-    </div>
-
-    <!-- Action Items -->
-    <div class="mb-4">
-      <h4 class="font-medium mb-2 text-gray-700">✅ Action Items & Next Steps</h4>
-      <div class="bg-yellow-50 p-3 rounded border text-sm">
-        <ul class="space-y-1">
-          ${result.actionItems.map(item => `<li class="flex items-start gap-2"><span class="text-yellow-600">•</span><span>${item}</span></li>`).join('')}
-        </ul>
-      </div>
-    </div>
-  `;
-  
-  // Add to container
-  const container = document.getElementById('aiAnalysisContainer');
-  container.appendChild(analysisElement);
-  
-  // Show the AI section and update count
-  const aiSection = document.getElementById('aiAnalysisSection');
-  aiSection.classList.remove('hidden');
-  updateAnalysisCount();
-  
-  // Scroll to the new analysis
-  analysisElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-// Update the loadAnalysesFromStorage function
-async function loadAnalysesFromStorage() {
-  try {
-    console.log('📥 Loading analyses with cross-device sync...');
-    
-    // Load with improved sync logic
-    const analyses = await analysisSync.loadAnalyses();
-    
-    if (analyses.length > 0) {
-      allAnalyses = analyses;
-      recordingCount = Math.max(...analyses.map(a => a.id), 0);
-      
-      // Display all analyses
-      analyses.forEach(analysis => {
-        displayStoredAnalysis(analysis);
-      });
-      
-      // Show section
-      document.getElementById('aiAnalysisSection').classList.remove('hidden');
-      updateAnalysisCount();
-      
-      console.log(`✅ Loaded ${analyses.length} analyses with cross-device sync`);
-      
-      // Show sync status
-      const status = await analysisSync.getStatus();
-      if (status.unsyncedCount > 0) {
-        showSaveConfirmation(`${status.unsyncedCount} analyses pending sync`);
-      }
-    }
-  } catch (error) {
-    console.error('❌ Error loading analyses:', error);
-  }
-}
-
-// Update the removeAnalysis function
-async function removeAnalysis(analysisId) {
-  if (!confirm('Remove this analysis? This will delete it from all your devices.')) {
-    return;
-  }
-
-  try {
-    // Remove from server and localStorage with proper sync
-    await analysisSync.deleteAnalysis(analysisId);
-    
-    // Remove from local array
-    allAnalyses = allAnalyses.filter(a => a.id !== analysisId);
-    
-    // Remove from UI
-    const element = document.getElementById(`analysis-${analysisId}`);
-    if (element) {
-      element.remove();
-    }
-    
-    // Update UI
-    updateAnalysisCount();
-    if (allAnalyses.length === 0) {
-      document.getElementById('aiAnalysisSection').classList.add('hidden');
-    }
-    
-    showSaveConfirmation('Analysis deleted from all devices');
-  } catch (error) {
-    console.error('❌ Error removing analysis:', error);
-    showSaveConfirmation('Error deleting analysis');
-  }
-}
-
-// Update the clearAllAnalysis function
-async function clearAllAnalysis() {
-  if (confirm('Clear all AI analysis results? This will remove them from all your devices and cannot be undone.')) {
-    try {
-      await analysisSync.clearAllAnalyses();
-      
-      allAnalyses = [];
-      recordingCount = 0;
-      document.getElementById('aiAnalysisContainer').innerHTML = '';
-      document.getElementById('aiAnalysisSection').classList.add('hidden');
-      
-      showSaveConfirmation('All analyses cleared from all devices');
-    } catch (error) {
-      console.error('❌ Error clearing analyses:', error);
-      showSaveConfirmation('Error clearing analyses');
-    }
-  }
-}
-
-// Update the showSaveConfirmation function to handle different messages
-function showSaveConfirmation(message = '✓ Analysis saved automatically') {
-  // Create temporary notification
-  const notification = document.createElement('div');
-  notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50 max-w-xs text-sm';
-  notification.textContent = message;
-  document.body.appendChild(notification);
-  
-  // Remove after 3 seconds
-  setTimeout(() => {
-    if (notification.parentNode) {
-      notification.remove();
-    }
-  }, 3000);
-}
-
-// Add a sync status indicator to the page
-function addSyncStatusIndicator() {
-  const header = document.querySelector('.bg-blue-500');
-  const statusDiv = document.createElement('div');
-  statusDiv.id = 'syncStatus';
-  statusDiv.className = 'text-xs text-white opacity-75';
-  header.appendChild(statusDiv);
-  
-  updateSyncStatus();
-}
-
-async function updateSyncStatus() {
-  try {
-    const status = await analysisSync.getStatus();
-    const statusDiv = document.getElementById('syncStatus');
-    
-    if (!statusDiv) return;
-    
-    if (!status.serverReachable) {
-      statusDiv.textContent = '📱 Offline - changes saved locally';
-      statusDiv.className = 'text-xs text-orange-200';
-    } else if (status.unsyncedCount > 0) {
-      statusDiv.textContent = `🔄 ${status.unsyncedCount} changes syncing...`;
-      statusDiv.className = 'text-xs text-yellow-200';
-    } else if (status.localCount > 0) {
-      statusDiv.textContent = '☁️ All changes synced';
-      statusDiv.className = 'text-xs text-green-200';
-    } else {
-      statusDiv.textContent = '';
-    }
-  } catch (error) {
-    console.error('Error updating sync status:', error);
-  }
-}
-
-// Update the DOMContentLoaded event listener
-document.addEventListener('DOMContentLoaded', async function() {
-  console.log('🔄 DOMContentLoaded - appointmentId:', appointmentId);
-  checkAuth();
-  loadAppointmentDetails();
-  loadVisitNotes();
-  
-  // Initialize analysis sync with improved version
-  console.log('🔄 Creating enhanced SimpleAnalysisSync...');
-  analysisSync = new SimpleAnalysisSync(appointmentId);
-  console.log('✅ analysisSync created:', !!analysisSync);
-  
-  // Load existing analyses with cross-device sync
-  await loadAnalysesFromStorage();
-  
-  // Add sync status indicator
-  addSyncStatusIndicator();
-  
-  // Periodically update sync status
-  setInterval(updateSyncStatus, 30000); // Update every 30 seconds
-  
-  console.log('✅ Visit page initialized with enhanced cross-device sync');
-});
-
-    function updateAnalysisCount() {
-      const countElement = document.getElementById('analysisCount');
-      countElement.textContent = `${allAnalyses.length} recording${allAnalyses.length !== 1 ? 's' : ''}`;
-    }
-
-    function showSaveConfirmation() {
-      // Create temporary notification
-      const notification = document.createElement('div');
-      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-      notification.textContent = '✓ Analysis saved automatically';
-      document.body.appendChild(notification);
-      
-      // Remove after 2 seconds
-      setTimeout(() => {
-        notification.remove();
-      }, 2000);
-    }
-
-    async function removeAnalysis(analysisId) {
-  if (!confirm('Remove this analysis? This will delete it from your account.')) {
-    return;
-  }
-
-  // Remove from server and localStorage
-  await analysisSync.deleteAnalysis(analysisId);
-  
-  // Remove from local array
-  allAnalyses = allAnalyses.filter(a => a.id !== analysisId);
-  
-  // Remove from UI
-  const element = document.getElementById(`analysis-${analysisId}`);
-  if (element) {
-    element.remove();
-  }
-  
-  // Update UI
-  updateAnalysisCount();
-  if (allAnalyses.length === 0) {
-    document.getElementById('aiAnalysisSection').classList.add('hidden');
-  }
-  
-  showSaveConfirmation('Analysis deleted from all devices');
-}
-
-    function clearAllAnalysis() {
-      if (confirm('Clear all AI analysis results? This cannot be undone.')) {
-        allAnalyses = [];
-        recordingCount = 0;
-        document.getElementById('aiAnalysisContainer').innerHTML = '';
-        document.getElementById('aiAnalysisSection').classList.add('hidden');
-        saveAnalysesToStorage();
-        showSaveConfirmation();
-      }
-    }
-
-    async function saveAnalysesToStorage() {
-  try {
-    // Save all current analyses to server
-    for (const analysis of allAnalyses) {
-      await analysisSync.saveAnalysis(analysis);
-    }
-    showSaveConfirmation('All analyses synced to cloud');
-  } catch (error) {
-    console.error('Error syncing analyses:', error);
-    showSaveConfirmation('Sync failed - saved locally only');
-  }
-}
-
-    async function loadAnalysesFromStorage() {
-  try {
-    // Load from cloud/localStorage
-    const analyses = await analysisSync.loadAnalyses();
-    
-    if (analyses.length > 0) {
-      allAnalyses = analyses;
-      recordingCount = Math.max(...analyses.map(a => a.id), 0);
-      
-      // Display all analyses
-      analyses.forEach(analysis => {
-        displayStoredAnalysis(analysis);
-      });
-      
-      // Show section
-      document.getElementById('aiAnalysisSection').classList.remove('hidden');
-      updateAnalysisCount();
-      
-      console.log(`Loaded ${analyses.length} analyses from cloud`);
-    }
-  } catch (error) {
-    console.error('Error loading analyses:', error);
-  }
-}
-
-    function displayStoredAnalysis(analysisData) {
-      const analysisElement = document.createElement('div');
-      analysisElement.className = 'border rounded-lg p-4 bg-gray-50';
-      analysisElement.id = `analysis-${analysisData.id}`;
-      
-      analysisElement.innerHTML = `
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold text-gray-800">Recording ${analysisData.id}</h3>
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-500">${analysisData.timestamp}</span>
-            <button onclick="removeAnalysis(${analysisData.id})" class="text-red-500 hover:text-red-600 text-sm">Remove</button>
-          </div>
-        </div>
-        
-        <!-- Transcript -->
-        <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">📝 Transcript</h4>
-          <div class="bg-white p-3 rounded border text-sm max-h-32 overflow-y-auto">
-            <p class="whitespace-pre-wrap">${analysisData.transcript}</p>
-          </div>
-        </div>
-
-        <!-- Summary -->
-        <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">📋 Summary</h4>
-          <div class="bg-blue-50 p-3 rounded border text-sm">
-            <div class="space-y-1">
-              ${analysisData.summary.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
-            </div>
-          </div>
-        </div>
-
-        <!-- Key Points -->
-        ${analysisData.keyPoints && analysisData.keyPoints.length > 0 ? `
-        <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">🔍 Key Points</h4>
-          <div class="bg-purple-50 p-3 rounded border text-sm">
-            <ul class="space-y-1">
-              ${analysisData.keyPoints.map(point => `<li class="flex items-start gap-2"><span class="text-purple-600">•</span><span>${point}</span></li>`).join('')}
-            </ul>
-          </div>
-        </div>` : ''}
-
-        <!-- Suggested Questions -->
-        <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">❓ Suggested Follow-up Questions</h4>
-          <div class="bg-green-50 p-3 rounded border text-sm">
-            <ul class="space-y-1">
-              ${analysisData.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600">•</span><span>${q}</span></li>`).join('')}
-            </ul>
-          </div>
-        </div>
-
-        <!-- Action Items -->
-        <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">✅ Action Items & Next Steps</h4>
-          <div class="bg-yellow-50 p-3 rounded border text-sm">
-            <ul class="space-y-1">
-              ${analysisData.actionItems.map(item => `<li class="flex items-start gap-2"><span class="text-yellow-600">•</span><span>${item}</span></li>`).join('')}
-            </ul>
-          </div>
-        </div>
-      `;
-      
-      const container = document.getElementById('aiAnalysisContainer');
-      container.appendChild(analysisElement);
-    }
-
-    function saveAIAnalysis() {
-      if (allAnalyses.length === 0) {
-        alert('No AI analysis to save!');
-        return;
-      }
-
-      // Compile all analyses into organized format
-      const currentNotes = document.getElementById('manualNotes').value;
-      
-      let compiledAnalysis = '\n=== AI ANALYSIS SUMMARY ===\n\n';
-      
-      // Overall summary section
-      compiledAnalysis += '📋 VISIT SUMMARIES:\n';
-      allAnalyses.forEach((analysis, index) => {
-        compiledAnalysis += `\nRecording ${analysis.id} (${analysis.timestamp}):\n${analysis.summary}\n`;
-      });
-      
-      // Combined key points
-      const allKeyPoints = allAnalyses.flatMap(a => a.keyPoints || []);
-      if (allKeyPoints.length > 0) {
-        compiledAnalysis += '\n🔍 KEY POINTS:\n';
-        allKeyPoints.forEach(point => {
-          compiledAnalysis += `• ${point}\n`;
-        });
-      }
-      
-      // All follow-up questions
-      compiledAnalysis += '\n❓ FOLLOW-UP QUESTIONS TO ASK:\n';
-      allAnalyses.forEach((analysis, index) => {
-        if (analysis.questions.length > 0) {
-          analysis.questions.forEach(q => {
-            compiledAnalysis += `• ${q}\n`;
-          });
-        }
-      });
-      
-      // All action items
-      compiledAnalysis += '\n✅ ACTION ITEMS & NEXT STEPS:\n';
-      allAnalyses.forEach((analysis, index) => {
-        if (analysis.actionItems.length > 0) {
-          analysis.actionItems.forEach(item => {
-            compiledAnalysis += `• ${item}\n`;
-          });
-        }
-      });
-      
-      // Full transcripts section
-      compiledAnalysis += '\n📝 FULL TRANSCRIPTS:\n';
-      allAnalyses.forEach((analysis, index) => {
-        compiledAnalysis += `\n--- Recording ${analysis.id} Transcript ---\n${analysis.transcript}\n`;
-      });
-      
-      // Combine with existing notes
-      const finalNotes = currentNotes + compiledAnalysis + '\n\n=== ADDITIONAL MANUAL NOTES ===\n';
-      
-      document.getElementById('manualNotes').value = finalNotes;
-      alert(`Successfully compiled ${allAnalyses.length} AI analysis(es) into visit notes!`);
-    }
-
-    // Add process audio button after recording
-    function addProcessButton() {
-      if (currentAudioBlob && !document.getElementById('processBtn')) {
-        const controls = document.querySelector('.bg-gray-50.rounded-lg');
-        const processBtn = document.createElement('button');
-        processBtn.id = 'processBtn';
-        processBtn.onclick = processAudioWithAI;
-        processBtn.className = 'bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600';
-        processBtn.innerHTML = 'Analyze with AI';
-        controls.appendChild(processBtn);
-      }
-    }
-
-    // Update the recording stop handler
-    const originalStopRecording = stopRecording;
-    stopRecording = function() {
-      originalStopRecording();
-      setTimeout(addProcessButton, 500); // Add button after audio is ready
-    };
-
-    // Also add button after file upload
-    const originalHandleAudioUpload = handleAudioUpload;
-    handleAudioUpload = function(event) {
-      originalHandleAudioUpload(event);
-      setTimeout(addProcessButton, 500);
-    };
-
-    // [Previous JavaScript functions remain the same - loadAppointmentDetails, displayAppointmentDetails, etc.]
-    
-    async function loadAppointmentDetails() {
-      try {
-        const response = await fetch(`/api/appointments`, {
-          credentials: 'include'
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch appointments');
-        }
-
-        const appointments = await response.json();
-        currentAppointment = appointments.find(app => app._id === appointmentId);
-
-        if (!currentAppointment) {
-          throw new Error('Appointment not found');
-        }
-
-        displayAppointmentDetails();
-        loadMedicalProfile();
-        
-        document.getElementById('loadingMessage').style.display = 'none';
-        document.getElementById('appointmentContent').style.display = 'block';
-
-      } catch (err) {
-        console.error('Error loading appointment:', err);
-        showError("Failed to load appointment details");
-      }
-    }
-
-    function displayAppointmentDetails() {
-      const dateObj = new Date(currentAppointment.date);
-      const dateStr = dateObj.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      });
-      const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-      const detailsContainer = document.getElementById('appointmentDetails');
-      detailsContainer.innerHTML = `
-        <div class="space-y-3">
-          <div>
-            <span class="font-semibold text-gray-700">Doctor:</span>
-            <p class="text-lg">Dr. ${currentAppointment.doctor}</p>
-          </div>
-          <div>
-            <span class="font-semibold text-gray-700">Date & Time:</span>
-            <p class="text-lg">${dateStr}</p>
-            <p class="text-gray-600">${timeStr}</p>
-          </div>
-          <div>
-            <span class="font-semibold text-gray-700">Reason for Visit:</span>
-            <p class="text-gray-800">${currentAppointment.reason || 'Not specified'}</p>
-          </div>
-        </div>
-        <div class="space-y-3">
-          <div>
-            <span class="font-semibold text-gray-700">Goal for Visit:</span>
-            <p class="text-gray-800">${currentAppointment.goal || 'Not specified'}</p>
-          </div>
-          <div>
-            <span class="font-semibold text-gray-700">Symptoms:</span>
-            <p class="text-gray-800">${currentAppointment.symptoms || 'None listed'}</p>
-          </div>
-          <div>
-            <span class="font-semibold text-gray-700">Created:</span>
-            <p class="text-gray-600 text-sm">${new Date(currentAppointment.createdAt).toLocaleDateString()}</p>
-          </div>
-        </div>
-      `;
-    }
-
-    async function loadMedicalProfile() {
-      try {
-        const response = await fetch('/api/profile', {
-          credentials: 'include'
-        });
-
-        if (response.ok) {
-          const profile = await response.json();
-          displayProfileSummary(profile);
-        }
-      } catch (err) {
-        console.error('Error loading medical profile:', err);
-        document.getElementById('profileSummary').innerHTML = `
-          <p class="text-gray-500 col-span-2">Unable to load medical profile</p>
-        `;
-      }
-    }
-
-    function displayProfileSummary(profile) {
-      const summary = document.getElementById('profileSummary');
-      
-      if (!profile || Object.keys(profile).length <= 2) {
-        summary.innerHTML = `
-          <p class="text-gray-500 col-span-2">
-            No medical profile found. 
-            <a href="/profile.html" class="text-blue-500 hover:text-blue-600">Create your profile →</a>
-          </p>
-        `;
-        return;
-      }
-
-      // Handle both new separate fields and legacy combined fields
-      const height = profile.height || (profile.heightWeight ? profile.heightWeight.split(',')[0]?.trim() : '');
-      const weight = profile.weight || (profile.heightWeight ? profile.heightWeight.split(',')[1]?.trim() : '');
-      const emergencyName = profile.emergencyContactName || (profile.emergencyContact ? profile.emergencyContact.split(' - ')[0] : '');
-      const emergencyPhone = profile.emergencyContactPhone || (profile.emergencyContact ? profile.emergencyContact.split(' - ')[1] : '');
-
-      summary.innerHTML = `
-        <div class="space-y-2">
-          ${profile.name ? `<div><strong>Name:</strong> ${profile.name}</div>` : ''}
-          ${profile.bloodType ? `<div><strong>Blood Type:</strong> ${profile.bloodType}</div>` : ''}
-          ${height ? `<div><strong>Height:</strong> ${height}</div>` : ''}
-          ${weight ? `<div><strong>Weight:</strong> ${weight}</div>` : ''}
-          ${profile.allergies ? `<div><strong>Allergies:</strong> ${profile.allergies}</div>` : ''}
-          ${profile.conditions ? `<div><strong>Conditions:</strong> ${profile.conditions}</div>` : ''}
-        </div>
-        <div class="space-y-2">
-          ${profile.medications ? `<div><strong>Medications:</strong> ${profile.medications}</div>` : ''}
-          ${emergencyName ? `<div><strong>Emergency Contact:</strong> ${emergencyName}</div>` : ''}
-          ${emergencyPhone ? `<div><strong>Emergency Phone:</strong> ${emergencyPhone}</div>` : ''}
-          ${profile.insurance ? `<div><strong>Insurance:</strong> ${profile.insurance}</div>` : ''}
-        </div>
-      `;
-    }
-
-    // [Rest of the existing functions - editAppointment, deleteCurrentAppointment, saveVisitNotes, etc.]
-    function editAppointment() {
-      const dateObj = new Date(currentAppointment.date);
-      
-      document.getElementById('editDoctor').value = currentAppointment.doctor;
-      document.getElementById('editDate').value = dateObj.toISOString().split('T')[0];
-      document.getElementById('editTime').value = dateObj.toTimeString().split(' ')[0].substring(0, 5);
-      document.getElementById('editReason').value = currentAppointment.reason || '';
-      document.getElementById('editGoal').value = currentAppointment.goal || '';
-      document.getElementById('editSymptoms').value = currentAppointment.symptoms || '';
-      
-      document.getElementById('editModal').classList.remove('hidden');
-    }
-
-    function closeEditModal() {
-      document.getElementById('editModal').classList.add('hidden');
-    }
-
-    document.getElementById('editAppointmentForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const doctor = document.getElementById('editDoctor').value;
-      const date = document.getElementById('editDate').value;
-      const time = document.getElementById('editTime').value;
-      const reason = document.getElementById('editReason').value;
-      const goal = document.getElementById('editGoal').value;
-      const symptoms = document.getElementById('editSymptoms').value;
-
-      const fullDateTime = new Date(`${date}T${time}`);
-
-      try {
-        const response = await fetch(`/api/appointments/${appointmentId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          
-          },
-          credentials: 'include',
-          body: JSON.stringify({ doctor, date: fullDateTime, reason, goal, symptoms })
-        });
-
-        if (response.ok) {
-          closeEditModal();
-          window.location.reload();
-        } else {
-          alert('Failed to update appointment');
-        }
-      } catch (err) {
-        console.error('Update error:', err);
-        alert('Error updating appointment');
-      }
-    });
-
-    async function deleteCurrentAppointment() {
-      if (!confirm("Are you sure you want to delete this appointment?")) return;
-
-      try {
-        const response = await fetch(`/api/appointments/${appointmentId}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
-
-        if (response.ok) {
-          alert('Appointment deleted successfully');
-          window.location.href = '/';
-        } else {
-          alert('Failed to delete appointment');
-        }
-      } catch (err) {
-        console.error('Delete error:', err);
-        alert('Error deleting appointment');
-      }
-    }
-
-    function saveVisitNotes() {
-      const manualNotes = document.getElementById('manualNotes').value;
-      const prescriptions = document.getElementById('prescriptions').value;
-      const followUp = document.getElementById('followUp').value;
-
-      const notesKey = `visit_notes_${appointmentId}`;
-      const notes = {
-        manualNotes,
-        prescriptions,
-        followUp,
-        savedAt: new Date().toISOString()
-      };
- 
-      localStorage.setItem(notesKey, JSON.stringify(notes));
-      alert('Visit notes saved successfully!');
-    }
-
-    function loadVisitNotes() {
-      const notesKey = `visit_notes_${appointmentId}`;
-      const savedNotes = localStorage.getItem(notesKey);
-      
-      if (savedNotes) {
-        try {
-          const notes = JSON.parse(savedNotes);
-          document.getElementById('manualNotes').value = notes.manualNotes || '';
-          document.getElementById('prescriptions').value = notes.prescriptions || '';
-          document.getElementById('followUp').value = notes.followUp || '';
-        } catch (err) {
-          console.error('Error loading saved notes:', err);
-        }
-      }
-    }
-
-    function showError(message) {
-      document.getElementById('loadingMessage').style.display = 'none';
-      document.getElementById('errorMessage').style.display = 'block';
-      document.getElementById('errorMessage').querySelector('.text-red-500').textContent = message;
-    }
-
-    async function logout() {
-  try {
-    await fetch('/api/logout', {
-      method: 'POST',
-      credentials: 'include'
-    });
-  } catch (error) {
-    console.error('Logout error:', error);
-  }
-  
-  window.location.href = '/login.html';
-}
-
-    // Load appointment details and notes when page loads
-    document.addEventListener('DOMContentLoaded', async function() {
-      console.log('🔍 DOMContentLoaded - appointmentId:', appointmentId);
-  checkAuth();
-  loadAppointmentDetails();
-  loadVisitNotes();
-  
-  // Initialize analysis sync
-  console.log('🔍 Creating SimpleAnalysisSync...');
-  analysisSync = new SimpleAnalysisSync(appointmentId);
-  console.log('🔍 analysisSync created:', !!analysisSync);
-  
-  // Load existing analyses with cloud sync
-  await loadAnalysesFromStorage();
-  
-  console.log('✅ Visit page initialized with cloud sync');
-});
-  </script>
-
-  <!-- PWA Service Worker Registration -->
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-      for(let registration of registrations) {
-        registration.unregister();
-        console.log('Unregistered service worker');
-      }
-    });
-  }
-  // Register Service Worker
-
-  // Handle install prompt
-  let deferredPrompt;
-  
-  window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent Chrome 67 and earlier from automatically showing the prompt
-    e.preventDefault();
-    // Stash the event so it can be triggered later
-    deferredPrompt = e;
-    console.log('Install prompt ready');
-    
-    // Optionally show your own install button
-    showInstallButton();
-  });
-  
-  function showInstallButton() {
-    // You can create a custom install button here
-    console.log('📱 App can be installed!');
-  }
-  
-  window.addEventListener('appinstalled', (evt) => {
-    console.log('🎉 App was installed successfully!');
-  });
-</script>
 </body>
 </html>
