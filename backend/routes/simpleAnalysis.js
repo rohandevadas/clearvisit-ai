@@ -7,6 +7,12 @@ const mongoose = require('mongoose');
 
 const router = express.Router();
 
+//test 
+router.get('/test-simple-analysis', (req, res) => {
+  console.log('🧪 Test route hit - simpleAnalysis route is working');
+  res.json({ message: 'simpleAnalysis route is working', timestamp: new Date() });
+});
+
 // Simple schema for storing analysis data
 const SimpleAnalysisSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -22,13 +28,24 @@ const SimpleAnalysis = mongoose.model('SimpleAnalysis', SimpleAnalysisSchema);
 
 // Auth middleware
 function authenticateToken(req, res, next) {
-  // Try cookie first, then Authorization header as fallback
+  console.log('🔍 Auth Debug - Cookies:', req.cookies);
+  console.log('🔍 Auth Debug - Headers:', req.headers.authorization);
+  
   let token = req.cookies.token || req.headers.authorization;
   
-  if (!token) return res.sendStatus(401);
+  console.log('🔍 Auth Debug - Token found:', !!token);
+  
+  if (!token) {
+    console.log('❌ No token found');
+    return res.sendStatus(401);
+  }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
+    if (err) {
+      console.log('❌ Token verification failed:', err.message);
+      return res.sendStatus(403);
+    }
+    console.log('✅ Token verified for user:', user.id);
     req.user = user;
     next();
   });
