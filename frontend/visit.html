@@ -256,20 +256,11 @@
 
   <script>
     // Check authentication
-    async function checkAuth() {
-  try {
-    const res = await fetch('/api/me', {
-      credentials: 'include'
-    });
-    if (!res.ok) {
-      window.location.href = '/login.html';
+    if (!localStorage.getItem("token")) {
+      window.location.href = "/login.html";
     }
-  } catch (error) {
-    window.location.href = '/login.html';
-  }
-}
 
-    
+    const token = localStorage.getItem("token");
     let currentAppointment = null;
     let mediaRecorder = null;
     let audioChunks = [];
@@ -422,7 +413,9 @@
         // Send to backend for AI processing
         const response = await fetch('/api/process-audio', {
           method: 'POST',
-          credentials: 'include',
+          headers: {
+            'Authorization': token
+          },
           body: formData
         });
 
@@ -795,7 +788,7 @@
     async function loadAppointmentDetails() {
       try {
         const response = await fetch(`/api/appointments`, {
-          credentials: 'include'
+          headers: { Authorization: token }
         });
 
         if (!response.ok) {
@@ -868,7 +861,7 @@
     async function loadMedicalProfile() {
       try {
         const response = await fetch('/api/profile', {
-          credentials: 'include'
+          headers: { Authorization: token }
         });
 
         if (response.ok) {
@@ -955,9 +948,8 @@
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-          
+            Authorization: token
           },
-          credentials: 'include',
           body: JSON.stringify({ doctor, date: fullDateTime, reason, goal, symptoms })
         });
 
@@ -979,7 +971,7 @@
       try {
         const response = await fetch(`/api/appointments/${appointmentId}`, {
           method: 'DELETE',
-          credentials: 'include'
+          headers: { Authorization: token }
         });
 
         if (response.ok) {
@@ -1033,22 +1025,14 @@
       document.getElementById('errorMessage').querySelector('.text-red-500').textContent = message;
     }
 
-    async function logout() {
-  try {
-    await fetch('/api/logout', {
-      method: 'POST',
-      credentials: 'include'
-    });
-  } catch (error) {
-    console.error('Logout error:', error);
-  }
-  
-  window.location.href = '/login.html';
-}
+    function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userEmail");
+      window.location.href = "/login.html";
+    }
 
     // Load appointment details and notes when page loads
     document.addEventListener('DOMContentLoaded', () => {
-      checkAuth();
       loadAppointmentDetails();
       loadVisitNotes();
       loadAnalysesFromStorage(); // Load saved AI analyses
@@ -1062,10 +1046,10 @@
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .then((registration) => {
-          console.log('SW registered: ', registration);
+          console.log('✅ SW registered: ', registration);
         })
         .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
+          console.log('❌ SW registration failed: ', registrationError);
         });
     });
   }
