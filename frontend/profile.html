@@ -336,16 +336,18 @@
   </script>
   <!-- PWA Service Worker Registration -->
 <script>
+  // Register Service Worker
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-      for(let registration of registrations) {
-        registration.unregister();
-        console.log('Unregistered service worker');
-      }
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('✅ SW registered: ', registration);
+        })
+        .catch((registrationError) => {
+          console.log('❌ SW registration failed: ', registrationError);
+        });
     });
   }
-  // Register Service Worker
-  
 
   // Handle install prompt
   let deferredPrompt;

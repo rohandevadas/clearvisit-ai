@@ -254,10 +254,844 @@
     </div>
   </div>
 
-  <!-- Load JavaScript files -->
-  <script src="/js/visit-sync.js"></script>
-  <script src="/js/visit-audio.js"></script>
-  <script src="/js/visit-main.js"></script>
+  <script>
+    // Check authentication
+    async function checkAuth() {
+  try {
+    const res = await fetch('/api/me', {
+      credentials: 'include'
+    });
+    if (!res.ok) {
+      window.location.href = '/login.html';
+    }
+  } catch (error) {
+    window.location.href = '/login.html';
+  }
+}
 
+    
+    let currentAppointment = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordingTimer = null;
+    let recordingStartTime = null;
+    let currentAudioBlob = null;
+    let recordingCount = 0;
+    let allAnalyses = []; // Store all AI analyses
+
+    // Get appointment ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const appointmentId = urlParams.get('id');
+
+    if (!appointmentId) {
+      showError("No appointment ID provided");
+    }
+
+    // Audio Recording Functions
+    async function toggleRecording() {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    }
+
+    async function startRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            sampleRate: 44100
+          } 
+        });
+        
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        });
+        
+        audioChunks = [];
+        
+        mediaRecorder.ondataavailable = (event) => {
+          audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+  const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+  currentAudioBlob = audioBlob;
+  const audioUrl = URL.createObjectURL(audioBlob);
+  const audioPlayer = document.getElementById('audioPlayer');
+  audioPlayer.src = audioUrl;
+  audioPlayer.classList.remove('hidden');
+  
+  // Show play button only now that we have audio
+  document.getElementById('playBtn').classList.remove('hidden');
+  
+  // Stop all tracks to release microphone
+  stream.getTracks().forEach(track => track.stop());
+};
+        
+        mediaRecorder.start();
+        updateRecordingUI(true);
+        startTimer();
+        
+      } catch (err) {
+        console.error('Error accessing microphone:', err);
+        alert('Could not access microphone. Please check permissions.');
+      }
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        updateRecordingUI(false);
+        stopTimer();
+      }
+    }
+
+    function updateRecordingUI(isRecording) {
+      const recordBtn = document.getElementById('recordBtn');
+      const recordIcon = document.getElementById('recordIcon');
+      const recordText = document.getElementById('recordText');
+      const recordingStatus = document.getElementById('recordingStatus');
+      
+      if (isRecording) {
+        recordBtn.className = 'bg-gray-500 text-white px-6 py-3 rounded-full hover:bg-gray-600 transition-all flex items-center gap-2';
+        recordIcon.textContent = '⏹️';
+        recordText.textContent = 'Stop Recording';
+        recordingStatus.classList.remove('hidden');
+      } else {
+        recordBtn.className = 'bg-red-500 text-white px-6 py-3 rounded-full hover:bg-red-600 transition-all flex items-center gap-2';
+        recordIcon.textContent = '🔴';
+        recordText.textContent = 'Start Recording';
+        recordingStatus.classList.add('hidden');
+      }
+    }
+
+    function startTimer() {
+      recordingStartTime = Date.now();
+      recordingTimer = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        const seconds = (elapsed % 60).toString().padStart(2, '0');
+        document.getElementById('recordingTimer').textContent = `${minutes}:${seconds}`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (recordingTimer) {
+        clearInterval(recordingTimer);
+        recordingTimer = null;
+      }
+    }
+
+    function playRecording() {
+      const audioPlayer = document.getElementById('audioPlayer');
+      audioPlayer.play();
+    }
+
+    function handleAudioUpload(event) {
+  const file = event.target.files[0];
+  if (file) {
+    currentAudioBlob = file;
+    const audioUrl = URL.createObjectURL(file);
+    const audioPlayer = document.getElementById('audioPlayer');
+    audioPlayer.src = audioUrl;
+    audioPlayer.classList.remove('hidden');
+    
+    // Show play button since we now have audio to play
+    document.getElementById('playBtn').classList.remove('hidden');
+  }
+}
+
+    // AI Processing Functions
+    async function processAudioWithAI() {
+      if (!currentAudioBlob) {
+        alert('No audio recording found. Please record or upload audio first.');
+        return;
+      }
+
+      showProcessingStatus('Transcribing audio...');
+
+      try {
+        // Create FormData for audio upload
+        const formData = new FormData();
+        formData.append('audio', currentAudioBlob, 'recording.webm');
+        formData.append('appointmentId', appointmentId);
+
+        // Send to backend for AI processing
+        const response = await fetch('/api/process-audio', {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to process audio');
+        }
+
+        const result = await response.json();
+        
+        hideProcessingStatus();
+        displayAIResults(result);
+
+      } catch (error) {
+        console.error('Error processing audio:', error);
+        hideProcessingStatus();
+        alert('Error processing audio: ' + error.message);
+      }
+    }
+
+    function showProcessingStatus(message) {
+      document.getElementById('processingText').textContent = message;
+      document.getElementById('processingStatus').classList.remove('hidden');
+    }
+
+    function hideProcessingStatus() {
+      document.getElementById('processingStatus').classList.add('hidden');
+    }
+
+    function displayAIResults(result) {
+      recordingCount++;
+      
+      // Add this analysis to our collection
+      const analysisData = {
+        id: recordingCount,
+        timestamp: new Date().toLocaleString(),
+        transcript: result.transcript,
+        summary: result.summary,
+        keyPoints: result.keyPoints || [],
+        questions: result.questions || [],
+        actionItems: result.actionItems || []
+      };
+      
+      allAnalyses.push(analysisData);
+      
+      // Create HTML for this specific analysis
+      const analysisElement = document.createElement('div');
+      analysisElement.className = 'border rounded-lg p-4 bg-gray-50';
+      analysisElement.id = `analysis-${recordingCount}`;
+      
+      analysisElement.innerHTML = `
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-gray-800">Recording ${recordingCount}</h3>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-500">${analysisData.timestamp}</span>
+            <button onclick="removeAnalysis(${recordingCount})" class="text-red-500 hover:text-red-600 text-sm">Remove</button>
+          </div>
+        </div>
+        
+        <!-- Transcript -->
+        <div class="mb-4">
+          <h4 class="font-medium mb-2 text-gray-700">📝 Transcript</h4>
+          <div class="bg-white p-3 rounded border text-sm max-h-32 overflow-y-auto">
+            <p class="whitespace-pre-wrap">${result.transcript}</p>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="mb-4">
+          <h4 class="font-medium mb-2 text-gray-700">📋 Summary</h4>
+          <div class="bg-blue-50 p-3 rounded border text-sm">
+            <div class="space-y-1">
+              ${result.summary.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Points -->
+        ${result.keyPoints && result.keyPoints.length > 0 ? `
+        <div class="mb-4">
+          <h4 class="font-medium mb-2 text-gray-700">🔍 Key Points</h4>
+          <div class="bg-purple-50 p-3 rounded border text-sm">
+            <ul class="space-y-1">
+              ${result.keyPoints.map(point => `<li class="flex items-start gap-2"><span class="text-purple-600">•</span><span>${point}</span></li>`).join('')}
+            </ul>
+          </div>
+        </div>` : ''}
+
+        <!-- Suggested Questions -->
+        <div class="mb-4">
+          <h4 class="font-medium mb-2 text-gray-700">❓ Suggested Follow-up Questions</h4>
+          <div class="bg-green-50 p-3 rounded border text-sm">
+            <ul class="space-y-1">
+              ${result.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600">•</span><span>${q}</span></li>`).join('')}
+            </ul>
+          </div>
+        </div>
+
+        <!-- Action Items -->
+        <div class="mb-4">
+          <h4 class="font-medium mb-2 text-gray-700">✅ Action Items & Next Steps</h4>
+          <div class="bg-yellow-50 p-3 rounded border text-sm">
+            <ul class="space-y-1">
+              ${result.actionItems.map(item => `<li class="flex items-start gap-2"><span class="text-yellow-600">•</span><span>${item}</span></li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+      
+      // Add to container
+      const container = document.getElementById('aiAnalysisContainer');
+      container.appendChild(analysisElement);
+      
+      // Show the AI section and update count
+      const aiSection = document.getElementById('aiAnalysisSection');
+      aiSection.classList.remove('hidden');
+      updateAnalysisCount();
+      
+      // Auto-save to localStorage
+      saveAnalysesToStorage();
+      
+      // Scroll to the new analysis
+      analysisElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      
+      // Show brief save confirmation
+      showSaveConfirmation();
+    }
+
+    function updateAnalysisCount() {
+      const countElement = document.getElementById('analysisCount');
+      countElement.textContent = `${allAnalyses.length} recording${allAnalyses.length !== 1 ? 's' : ''}`;
+    }
+
+    function showSaveConfirmation() {
+      // Create temporary notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
+      notification.textContent = '✓ Analysis saved automatically';
+      document.body.appendChild(notification);
+      
+      // Remove after 2 seconds
+      setTimeout(() => {
+        notification.remove();
+      }, 2000);
+    }
+
+    function removeAnalysis(analysisId) {
+      if (confirm('Remove this analysis?')) {
+        // Remove from array
+        allAnalyses = allAnalyses.filter(analysis => analysis.id !== analysisId);
+        
+        // Remove from DOM
+        const element = document.getElementById(`analysis-${analysisId}`);
+        if (element) {
+          element.remove();
+        }
+        
+        // Hide section if no analyses left
+        if (allAnalyses.length === 0) {
+          document.getElementById('aiAnalysisSection').classList.add('hidden');
+        } else {
+          updateAnalysisCount();
+        }
+        
+        // Save updated state
+        saveAnalysesToStorage();
+        showSaveConfirmation();
+      }
+    }
+
+    function clearAllAnalysis() {
+      if (confirm('Clear all AI analysis results? This cannot be undone.')) {
+        allAnalyses = [];
+        recordingCount = 0;
+        document.getElementById('aiAnalysisContainer').innerHTML = '';
+        document.getElementById('aiAnalysisSection').classList.add('hidden');
+        saveAnalysesToStorage();
+        showSaveConfirmation();
+      }
+    }
+
+    function saveAnalysesToStorage() {
+      const analysesKey = `ai_analyses_${appointmentId}`;
+      localStorage.setItem(analysesKey, JSON.stringify({
+        analyses: allAnalyses,
+        recordingCount: recordingCount
+      }));
+    }
+
+    function loadAnalysesFromStorage() {
+      const analysesKey = `ai_analyses_${appointmentId}`;
+      const savedData = localStorage.getItem(analysesKey);
+      
+      if (savedData) {
+        try {
+          const data = JSON.parse(savedData);
+          allAnalyses = data.analyses || [];
+          recordingCount = data.recordingCount || 0;
+          
+          // Recreate the UI for each analysis
+          allAnalyses.forEach(analysis => {
+            displayStoredAnalysis(analysis);
+          });
+          
+          if (allAnalyses.length > 0) {
+            document.getElementById('aiAnalysisSection').classList.remove('hidden');
+            updateAnalysisCount();
+          }
+        } catch (err) {
+          console.error('Error loading saved analyses:', err);
+        }
+      }
+    }
+
+    function displayStoredAnalysis(analysisData) {
+      const analysisElement = document.createElement('div');
+      analysisElement.className = 'border rounded-lg p-4 bg-gray-50';
+      analysisElement.id = `analysis-${analysisData.id}`;
+      
+      analysisElement.innerHTML = `
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold text-gray-800">Recording ${analysisData.id}</h3>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-500">${analysisData.timestamp}</span>
+            <button onclick="removeAnalysis(${analysisData.id})" class="text-red-500 hover:text-red-600 text-sm">Remove</button>
+          </div>
+        </div>
+        
+        <!-- Transcript -->
+        <div class="mb-4">
+          <h4 class="font-medium mb-2 text-gray-700">📝 Transcript</h4>
+          <div class="bg-white p-3 rounded border text-sm max-h-32 overflow-y-auto">
+            <p class="whitespace-pre-wrap">${analysisData.transcript}</p>
+          </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="mb-4">
+          <h4 class="font-medium mb-2 text-gray-700">📋 Summary</h4>
+          <div class="bg-blue-50 p-3 rounded border text-sm">
+            <div class="space-y-1">
+              ${analysisData.summary.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Points -->
+        ${analysisData.keyPoints && analysisData.keyPoints.length > 0 ? `
+        <div class="mb-4">
+          <h4 class="font-medium mb-2 text-gray-700">🔍 Key Points</h4>
+          <div class="bg-purple-50 p-3 rounded border text-sm">
+            <ul class="space-y-1">
+              ${analysisData.keyPoints.map(point => `<li class="flex items-start gap-2"><span class="text-purple-600">•</span><span>${point}</span></li>`).join('')}
+            </ul>
+          </div>
+        </div>` : ''}
+
+        <!-- Suggested Questions -->
+        <div class="mb-4">
+          <h4 class="font-medium mb-2 text-gray-700">❓ Suggested Follow-up Questions</h4>
+          <div class="bg-green-50 p-3 rounded border text-sm">
+            <ul class="space-y-1">
+              ${analysisData.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600">•</span><span>${q}</span></li>`).join('')}
+            </ul>
+          </div>
+        </div>
+
+        <!-- Action Items -->
+        <div class="mb-4">
+          <h4 class="font-medium mb-2 text-gray-700">✅ Action Items & Next Steps</h4>
+          <div class="bg-yellow-50 p-3 rounded border text-sm">
+            <ul class="space-y-1">
+              ${analysisData.actionItems.map(item => `<li class="flex items-start gap-2"><span class="text-yellow-600">•</span><span>${item}</span></li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+      
+      const container = document.getElementById('aiAnalysisContainer');
+      container.appendChild(analysisElement);
+    }
+
+    function saveAIAnalysis() {
+      if (allAnalyses.length === 0) {
+        alert('No AI analysis to save!');
+        return;
+      }
+
+      // Compile all analyses into organized format
+      const currentNotes = document.getElementById('manualNotes').value;
+      
+      let compiledAnalysis = '\n=== AI ANALYSIS SUMMARY ===\n\n';
+      
+      // Overall summary section
+      compiledAnalysis += '📋 VISIT SUMMARIES:\n';
+      allAnalyses.forEach((analysis, index) => {
+        compiledAnalysis += `\nRecording ${analysis.id} (${analysis.timestamp}):\n${analysis.summary}\n`;
+      });
+      
+      // Combined key points
+      const allKeyPoints = allAnalyses.flatMap(a => a.keyPoints || []);
+      if (allKeyPoints.length > 0) {
+        compiledAnalysis += '\n🔍 KEY POINTS:\n';
+        allKeyPoints.forEach(point => {
+          compiledAnalysis += `• ${point}\n`;
+        });
+      }
+      
+      // All follow-up questions
+      compiledAnalysis += '\n❓ FOLLOW-UP QUESTIONS TO ASK:\n';
+      allAnalyses.forEach((analysis, index) => {
+        if (analysis.questions.length > 0) {
+          analysis.questions.forEach(q => {
+            compiledAnalysis += `• ${q}\n`;
+          });
+        }
+      });
+      
+      // All action items
+      compiledAnalysis += '\n✅ ACTION ITEMS & NEXT STEPS:\n';
+      allAnalyses.forEach((analysis, index) => {
+        if (analysis.actionItems.length > 0) {
+          analysis.actionItems.forEach(item => {
+            compiledAnalysis += `• ${item}\n`;
+          });
+        }
+      });
+      
+      // Full transcripts section
+      compiledAnalysis += '\n📝 FULL TRANSCRIPTS:\n';
+      allAnalyses.forEach((analysis, index) => {
+        compiledAnalysis += `\n--- Recording ${analysis.id} Transcript ---\n${analysis.transcript}\n`;
+      });
+      
+      // Combine with existing notes
+      const finalNotes = currentNotes + compiledAnalysis + '\n\n=== ADDITIONAL MANUAL NOTES ===\n';
+      
+      document.getElementById('manualNotes').value = finalNotes;
+      alert(`Successfully compiled ${allAnalyses.length} AI analysis(es) into visit notes!`);
+    }
+
+    // Add process audio button after recording
+    function addProcessButton() {
+      if (currentAudioBlob && !document.getElementById('processBtn')) {
+        const controls = document.querySelector('.bg-gray-50.rounded-lg');
+        const processBtn = document.createElement('button');
+        processBtn.id = 'processBtn';
+        processBtn.onclick = processAudioWithAI;
+        processBtn.className = 'bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600';
+        processBtn.innerHTML = 'Analyze with AI';
+        controls.appendChild(processBtn);
+      }
+    }
+
+    // Update the recording stop handler
+    const originalStopRecording = stopRecording;
+    stopRecording = function() {
+      originalStopRecording();
+      setTimeout(addProcessButton, 500); // Add button after audio is ready
+    };
+
+    // Also add button after file upload
+    const originalHandleAudioUpload = handleAudioUpload;
+    handleAudioUpload = function(event) {
+      originalHandleAudioUpload(event);
+      setTimeout(addProcessButton, 500);
+    };
+
+    // [Previous JavaScript functions remain the same - loadAppointmentDetails, displayAppointmentDetails, etc.]
+    
+    async function loadAppointmentDetails() {
+      try {
+        const response = await fetch(`/api/appointments`, {
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch appointments');
+        }
+
+        const appointments = await response.json();
+        currentAppointment = appointments.find(app => app._id === appointmentId);
+
+        if (!currentAppointment) {
+          throw new Error('Appointment not found');
+        }
+
+        displayAppointmentDetails();
+        loadMedicalProfile();
+        
+        document.getElementById('loadingMessage').style.display = 'none';
+        document.getElementById('appointmentContent').style.display = 'block';
+
+      } catch (err) {
+        console.error('Error loading appointment:', err);
+        showError("Failed to load appointment details");
+      }
+    }
+
+    function displayAppointmentDetails() {
+      const dateObj = new Date(currentAppointment.date);
+      const dateStr = dateObj.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const detailsContainer = document.getElementById('appointmentDetails');
+      detailsContainer.innerHTML = `
+        <div class="space-y-3">
+          <div>
+            <span class="font-semibold text-gray-700">Doctor:</span>
+            <p class="text-lg">Dr. ${currentAppointment.doctor}</p>
+          </div>
+          <div>
+            <span class="font-semibold text-gray-700">Date & Time:</span>
+            <p class="text-lg">${dateStr}</p>
+            <p class="text-gray-600">${timeStr}</p>
+          </div>
+          <div>
+            <span class="font-semibold text-gray-700">Reason for Visit:</span>
+            <p class="text-gray-800">${currentAppointment.reason || 'Not specified'}</p>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <span class="font-semibold text-gray-700">Goal for Visit:</span>
+            <p class="text-gray-800">${currentAppointment.goal || 'Not specified'}</p>
+          </div>
+          <div>
+            <span class="font-semibold text-gray-700">Symptoms:</span>
+            <p class="text-gray-800">${currentAppointment.symptoms || 'None listed'}</p>
+          </div>
+          <div>
+            <span class="font-semibold text-gray-700">Created:</span>
+            <p class="text-gray-600 text-sm">${new Date(currentAppointment.createdAt).toLocaleDateString()}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadMedicalProfile() {
+      try {
+        const response = await fetch('/api/profile', {
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          const profile = await response.json();
+          displayProfileSummary(profile);
+        }
+      } catch (err) {
+        console.error('Error loading medical profile:', err);
+        document.getElementById('profileSummary').innerHTML = `
+          <p class="text-gray-500 col-span-2">Unable to load medical profile</p>
+        `;
+      }
+    }
+
+    function displayProfileSummary(profile) {
+      const summary = document.getElementById('profileSummary');
+      
+      if (!profile || Object.keys(profile).length <= 2) {
+        summary.innerHTML = `
+          <p class="text-gray-500 col-span-2">
+            No medical profile found. 
+            <a href="/profile.html" class="text-blue-500 hover:text-blue-600">Create your profile →</a>
+          </p>
+        `;
+        return;
+      }
+
+      // Handle both new separate fields and legacy combined fields
+      const height = profile.height || (profile.heightWeight ? profile.heightWeight.split(',')[0]?.trim() : '');
+      const weight = profile.weight || (profile.heightWeight ? profile.heightWeight.split(',')[1]?.trim() : '');
+      const emergencyName = profile.emergencyContactName || (profile.emergencyContact ? profile.emergencyContact.split(' - ')[0] : '');
+      const emergencyPhone = profile.emergencyContactPhone || (profile.emergencyContact ? profile.emergencyContact.split(' - ')[1] : '');
+
+      summary.innerHTML = `
+        <div class="space-y-2">
+          ${profile.name ? `<div><strong>Name:</strong> ${profile.name}</div>` : ''}
+          ${profile.bloodType ? `<div><strong>Blood Type:</strong> ${profile.bloodType}</div>` : ''}
+          ${height ? `<div><strong>Height:</strong> ${height}</div>` : ''}
+          ${weight ? `<div><strong>Weight:</strong> ${weight}</div>` : ''}
+          ${profile.allergies ? `<div><strong>Allergies:</strong> ${profile.allergies}</div>` : ''}
+          ${profile.conditions ? `<div><strong>Conditions:</strong> ${profile.conditions}</div>` : ''}
+        </div>
+        <div class="space-y-2">
+          ${profile.medications ? `<div><strong>Medications:</strong> ${profile.medications}</div>` : ''}
+          ${emergencyName ? `<div><strong>Emergency Contact:</strong> ${emergencyName}</div>` : ''}
+          ${emergencyPhone ? `<div><strong>Emergency Phone:</strong> ${emergencyPhone}</div>` : ''}
+          ${profile.insurance ? `<div><strong>Insurance:</strong> ${profile.insurance}</div>` : ''}
+        </div>
+      `;
+    }
+
+    // [Rest of the existing functions - editAppointment, deleteCurrentAppointment, saveVisitNotes, etc.]
+    function editAppointment() {
+      const dateObj = new Date(currentAppointment.date);
+      
+      document.getElementById('editDoctor').value = currentAppointment.doctor;
+      document.getElementById('editDate').value = dateObj.toISOString().split('T')[0];
+      document.getElementById('editTime').value = dateObj.toTimeString().split(' ')[0].substring(0, 5);
+      document.getElementById('editReason').value = currentAppointment.reason || '';
+      document.getElementById('editGoal').value = currentAppointment.goal || '';
+      document.getElementById('editSymptoms').value = currentAppointment.symptoms || '';
+      
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+    }
+
+    document.getElementById('editAppointmentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const doctor = document.getElementById('editDoctor').value;
+      const date = document.getElementById('editDate').value;
+      const time = document.getElementById('editTime').value;
+      const reason = document.getElementById('editReason').value;
+      const goal = document.getElementById('editGoal').value;
+      const symptoms = document.getElementById('editSymptoms').value;
+
+      const fullDateTime = new Date(`${date}T${time}`);
+
+      try {
+        const response = await fetch(`/api/appointments/${appointmentId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          
+          },
+          credentials: 'include',
+          body: JSON.stringify({ doctor, date: fullDateTime, reason, goal, symptoms })
+        });
+
+        if (response.ok) {
+          closeEditModal();
+          window.location.reload();
+        } else {
+          alert('Failed to update appointment');
+        }
+      } catch (err) {
+        console.error('Update error:', err);
+        alert('Error updating appointment');
+      }
+    });
+
+    async function deleteCurrentAppointment() {
+      if (!confirm("Are you sure you want to delete this appointment?")) return;
+
+      try {
+        const response = await fetch(`/api/appointments/${appointmentId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          alert('Appointment deleted successfully');
+          window.location.href = '/';
+        } else {
+          alert('Failed to delete appointment');
+        }
+      } catch (err) {
+        console.error('Delete error:', err);
+        alert('Error deleting appointment');
+      }
+    }
+
+    function saveVisitNotes() {
+      const manualNotes = document.getElementById('manualNotes').value;
+      const prescriptions = document.getElementById('prescriptions').value;
+      const followUp = document.getElementById('followUp').value;
+
+      const notesKey = `visit_notes_${appointmentId}`;
+      const notes = {
+        manualNotes,
+        prescriptions,
+        followUp,
+        savedAt: new Date().toISOString()
+      };
+ 
+      localStorage.setItem(notesKey, JSON.stringify(notes));
+      alert('Visit notes saved successfully!');
+    }
+
+    function loadVisitNotes() {
+      const notesKey = `visit_notes_${appointmentId}`;
+      const savedNotes = localStorage.getItem(notesKey);
+      
+      if (savedNotes) {
+        try {
+          const notes = JSON.parse(savedNotes);
+          document.getElementById('manualNotes').value = notes.manualNotes || '';
+          document.getElementById('prescriptions').value = notes.prescriptions || '';
+          document.getElementById('followUp').value = notes.followUp || '';
+        } catch (err) {
+          console.error('Error loading saved notes:', err);
+        }
+      }
+    }
+
+    function showError(message) {
+      document.getElementById('loadingMessage').style.display = 'none';
+      document.getElementById('errorMessage').style.display = 'block';
+      document.getElementById('errorMessage').querySelector('.text-red-500').textContent = message;
+    }
+
+    async function logout() {
+  try {
+    await fetch('/api/logout', {
+      method: 'POST',
+      credentials: 'include'
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+  
+  window.location.href = '/login.html';
+}
+
+    // Load appointment details and notes when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAuth();
+      loadAppointmentDetails();
+      loadVisitNotes();
+      loadAnalysesFromStorage(); // Load saved AI analyses
+    });
+  </script>
+
+  <!-- PWA Service Worker Registration -->
+<script>
+  // Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('SW registered: ', registration);
+        })
+        .catch((registrationError) => {
+          console.log('SW registration failed: ', registrationError);
+        });
+    });
+  }
+
+  // Handle install prompt
+  let deferredPrompt;
+  
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent Chrome 67 and earlier from automatically showing the prompt
+    e.preventDefault();
+    // Stash the event so it can be triggered later
+    deferredPrompt = e;
+    console.log('💾 Install prompt ready');
+    
+    // Optionally show your own install button
+    showInstallButton();
+  });
+  
+  function showInstallButton() {
+    // You can create a custom install button here
+    console.log('📱 App can be installed!');
+  }
+  
+  window.addEventListener('appinstalled', (evt) => {
+    console.log('🎉 App was installed successfully!');
+  });
+</script>
 </body>
 </html>
