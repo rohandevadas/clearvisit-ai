@@ -85,7 +85,7 @@
               onclick="toggleRecording()" 
               class="bg-red-500 text-white px-6 py-3 rounded-full hover:bg-red-600 transition-all flex items-center gap-2"
             >
-              <span id="recordIcon">ðŸ”´</span>
+              <span id="recordIcon">🔴</span>
               <span id="recordText">Start Recording</span>
             </button>
             
@@ -127,7 +127,7 @@
           <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
             <input type="file" id="audioUpload" accept="audio/*" class="hidden" onchange="handleAudioUpload(event)">
             <button onclick="document.getElementById('audioUpload').click()" class="text-blue-500 hover:text-blue-600">
-              ðŸ“ Upload Audio File
+              ðŸ📅 Upload Audio File
             </button>
             <p class="text-sm text-gray-500 mt-2">Supports MP3, WAV, M4A, and other formats</p>
           </div>
@@ -348,12 +348,12 @@
       
       if (isRecording) {
         recordBtn.className = 'bg-gray-500 text-white px-6 py-3 rounded-full hover:bg-gray-600 transition-all flex items-center gap-2';
-        recordIcon.textContent = 'â¹ï¸';
+        recordIcon.textContent = '⏹️';
         recordText.textContent = 'Stop Recording';
         recordingStatus.classList.remove('hidden');
       } else {
         recordBtn.className = 'bg-red-500 text-white px-6 py-3 rounded-full hover:bg-red-600 transition-all flex items-center gap-2';
-        recordIcon.textContent = 'ðŸ”´';
+        recordIcon.textContent = '🔴';
         recordText.textContent = 'Start Recording';
         recordingStatus.classList.add('hidden');
       }
@@ -476,7 +476,7 @@
         
         <!-- Transcript -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">ðŸ“ Transcript</h4>
+          <h4 class="font-medium mb-2 text-gray-700">📅 Transcript</h4>
           <div class="bg-white p-3 rounded border text-sm max-h-32 overflow-y-auto">
             <p class="whitespace-pre-wrap">${result.transcript}</p>
           </div>
@@ -484,7 +484,7 @@
 
         <!-- Summary -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">ðŸ“‹ Summary</h4>
+          <h4 class="font-medium mb-2 text-gray-700">📅‹ Summary</h4>
           <div class="bg-blue-50 p-3 rounded border text-sm">
             <div class="space-y-1">
               ${result.summary.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
@@ -505,7 +505,7 @@
 
         <!-- Suggested Questions -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">â“ Suggested Follow-up Questions</h4>
+          <h4 class="font-medium mb-2 text-gray-700">📅 Suggested Follow-up Questions</h4>
           <div class="bg-green-50 p-3 rounded border text-sm">
             <ul class="space-y-1">
               ${result.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600">â€¢</span><span>${q}</span></li>`).join('')}
@@ -552,7 +552,7 @@
       // Create temporary notification
       const notification = document.createElement('div');
       notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-      notification.textContent = 'âœ“ Analysis saved automatically';
+      notification.textContent = '📅 Analysis saved automatically';
       document.body.appendChild(notification);
       
       // Remove after 2 seconds
@@ -645,7 +645,7 @@
         
         <!-- Transcript -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">ðŸ“ Transcript</h4>
+          <h4 class="font-medium mb-2 text-gray-700">📅 Transcript</h4>
           <div class="bg-white p-3 rounded border text-sm max-h-32 overflow-y-auto">
             <p class="whitespace-pre-wrap">${analysisData.transcript}</p>
           </div>
@@ -653,7 +653,7 @@
 
         <!-- Summary -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">ðŸ“‹ Summary</h4>
+          <h4 class="font-medium mb-2 text-gray-700">📅‹ Summary</h4>
           <div class="bg-blue-50 p-3 rounded border text-sm">
             <div class="space-y-1">
               ${analysisData.summary.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
@@ -674,7 +674,7 @@
 
         <!-- Suggested Questions -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">â“ Suggested Follow-up Questions</h4>
+          <h4 class="font-medium mb-2 text-gray-700">📅 Suggested Follow-up Questions</h4>
           <div class="bg-green-50 p-3 rounded border text-sm">
             <ul class="space-y-1">
               ${analysisData.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600">â€¢</span><span>${q}</span></li>`).join('')}
@@ -709,7 +709,7 @@
       let compiledAnalysis = '\n=== AI ANALYSIS SUMMARY ===\n\n';
       
       // Overall summary section
-      compiledAnalysis += 'ðŸ“‹ VISIT SUMMARIES:\n';
+      compiledAnalysis += '📅‹ VISIT SUMMARIES:\n';
       allAnalyses.forEach((analysis, index) => {
         compiledAnalysis += `\nRecording ${analysis.id} (${analysis.timestamp}):\n${analysis.summary}\n`;
       });
@@ -724,7 +724,7 @@
       }
       
       // All follow-up questions
-      compiledAnalysis += '\nâ“ FOLLOW-UP QUESTIONS TO ASK:\n';
+      compiledAnalysis += '\n📅FOLLOW-UP QUESTIONS TO ASK:\n';
       allAnalyses.forEach((analysis, index) => {
         if (analysis.questions.length > 0) {
           analysis.questions.forEach(q => {
@@ -744,7 +744,7 @@
       });
       
       // Full transcripts section
-      compiledAnalysis += '\nðŸ“ FULL TRANSCRIPTS:\n';
+      compiledAnalysis += '\n📅 FULL TRANSCRIPTS:\n';
       allAnalyses.forEach((analysis, index) => {
         compiledAnalysis += `\n--- Recording ${analysis.id} Transcript ---\n${analysis.transcript}\n`;
       });
@@ -1070,7 +1070,7 @@
   
   function showInstallButton() {
     // You can create a custom install button here
-    console.log('ðŸ“± App can be installed!');
+    console.log('ðŸ📅± App can be installed!');
   }
   
   window.addEventListener('appinstalled', (evt) => {
