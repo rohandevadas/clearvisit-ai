@@ -337,6 +337,14 @@
         mediaRecorder.stop();
         updateRecordingUI(false);
         stopTimer();
+        
+        // Show the audio controls after recording stops
+        setTimeout(() => {
+          const audioControls = document.getElementById('audioControls');
+          if (audioControls) {
+            audioControls.classList.remove('hidden');
+          }
+        }, 500);
       }
     }
 
@@ -382,18 +390,24 @@
     }
 
     function handleAudioUpload(event) {
-  const file = event.target.files[0];
-  if (file) {
-    currentAudioBlob = file;
-    const audioUrl = URL.createObjectURL(file);
-    const audioPlayer = document.getElementById('audioPlayer');
-    audioPlayer.src = audioUrl;
-    audioPlayer.classList.remove('hidden');
-    
-    // Show play button since we now have audio to play
-    document.getElementById('playBtn').classList.remove('hidden');
-  }
-}
+      const file = event.target.files[0];
+      if (file) {
+        currentAudioBlob = file;
+        const audioUrl = URL.createObjectURL(file);
+        const audioPlayer = document.getElementById('audioPlayer');
+        audioPlayer.src = audioUrl;
+        audioPlayer.classList.remove('hidden');
+        
+        // Show audio controls for uploaded file
+        const audioControls = document.getElementById('audioControls');
+        if (audioControls) {
+          audioControls.classList.remove('hidden');
+        }
+        
+        // Clear the file input for next upload
+        event.target.value = '';
+      }
+    }
 
     // AI Processing Functions
     async function processAudioWithAI() {
