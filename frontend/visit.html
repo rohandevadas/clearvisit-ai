@@ -127,7 +127,7 @@
           <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
             <input type="file" id="audioUpload" accept="audio/*" class="hidden" onchange="handleAudioUpload(event)">
             <button onclick="document.getElementById('audioUpload').click()" class="text-blue-500 hover:text-blue-600">
-              ðŸ📅 Upload Audio File
+              Upload Audio File
             </button>
             <p class="text-sm text-gray-500 mt-2">Supports MP3, WAV, M4A, and other formats</p>
           </div>
@@ -476,7 +476,7 @@
         
         <!-- Transcript -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">📅 Transcript</h4>
+          <h4 class="font-medium mb-2 text-gray-700">Transcript</h4>
           <div class="bg-white p-3 rounded border text-sm max-h-32 overflow-y-auto">
             <p class="whitespace-pre-wrap">${result.transcript}</p>
           </div>
@@ -484,7 +484,7 @@
 
         <!-- Summary -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">📅‹ Summary</h4>
+          <h4 class="font-medium mb-2 text-gray-700">Summary</h4>
           <div class="bg-blue-50 p-3 rounded border text-sm">
             <div class="space-y-1">
               ${result.summary.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
@@ -495,30 +495,30 @@
         <!-- Key Points -->
         ${result.keyPoints && result.keyPoints.length > 0 ? `
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">ðŸ” Key Points</h4>
+          <h4 class="font-medium mb-2 text-gray-700">Key Points</h4>
           <div class="bg-purple-50 p-3 rounded border text-sm">
             <ul class="space-y-1">
-              ${result.keyPoints.map(point => `<li class="flex items-start gap-2"><span class="text-purple-600">â€¢</span><span>${point}</span></li>`).join('')}
+              ${result.keyPoints.map(point => `<li class="flex items-start gap-2"><span class="text-purple-600"></span><span>${point}</span></li>`).join('')}
             </ul>
           </div>
         </div>` : ''}
 
         <!-- Suggested Questions -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">📅 Suggested Follow-up Questions</h4>
+          <h4 class="font-medium mb-2 text-gray-700">Suggested Follow-up Questions</h4>
           <div class="bg-green-50 p-3 rounded border text-sm">
             <ul class="space-y-1">
-              ${result.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600">â€¢</span><span>${q}</span></li>`).join('')}
+              ${result.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600"></span><span>${q}</span></li>`).join('')}
             </ul>
           </div>
         </div>
 
         <!-- Action Items -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">âœ… Action Items & Next Steps</h4>
+          <h4 class="font-medium mb-2 text-gray-700">Action Items & Next Steps</h4>
           <div class="bg-yellow-50 p-3 rounded border text-sm">
             <ul class="space-y-1">
-              ${result.actionItems.map(item => `<li class="flex items-start gap-2"><span class="text-yellow-600">â€¢</span><span>${item}</span></li>`).join('')}
+              ${result.actionItems.map(item => `<li class="flex items-start gap-2"><span class="text-yellow-600"></span><span>${item}</span></li>`).join('')}
             </ul>
           </div>
         </div>
@@ -552,7 +552,7 @@
       // Create temporary notification
       const notification = document.createElement('div');
       notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50';
-      notification.textContent = '📅 Analysis saved automatically';
+      notification.textContent = 'Analysis saved automatically';
       document.body.appendChild(notification);
       
       // Remove after 2 seconds
@@ -645,7 +645,7 @@
         
         <!-- Transcript -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">📅 Transcript</h4>
+          <h4 class="font-medium mb-2 text-gray-700">Transcript</h4>
           <div class="bg-white p-3 rounded border text-sm max-h-32 overflow-y-auto">
             <p class="whitespace-pre-wrap">${analysisData.transcript}</p>
           </div>
@@ -653,7 +653,7 @@
 
         <!-- Summary -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">📅‹ Summary</h4>
+          <h4 class="font-medium mb-2 text-gray-700">Summary</h4>
           <div class="bg-blue-50 p-3 rounded border text-sm">
             <div class="space-y-1">
               ${analysisData.summary.split('\n').map(line => line.trim() ? `<p>${line}</p>` : '').join('')}
@@ -664,30 +664,30 @@
         <!-- Key Points -->
         ${analysisData.keyPoints && analysisData.keyPoints.length > 0 ? `
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">ðŸ” Key Points</h4>
+          <h4 class="font-medium mb-2 text-gray-700">Key Points</h4>
           <div class="bg-purple-50 p-3 rounded border text-sm">
             <ul class="space-y-1">
-              ${analysisData.keyPoints.map(point => `<li class="flex items-start gap-2"><span class="text-purple-600">â€¢</span><span>${point}</span></li>`).join('')}
+              ${analysisData.keyPoints.map(point => `<li class="flex items-start gap-2"><span class="text-purple-600"></span><span>${point}</span></li>`).join('')}
             </ul>
           </div>
         </div>` : ''}
 
         <!-- Suggested Questions -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">📅 Suggested Follow-up Questions</h4>
+          <h4 class="font-medium mb-2 text-gray-700">Suggested Follow-up Questions</h4>
           <div class="bg-green-50 p-3 rounded border text-sm">
             <ul class="space-y-1">
-              ${analysisData.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600">â€¢</span><span>${q}</span></li>`).join('')}
+              ${analysisData.questions.map(q => `<li class="flex items-start gap-2"><span class="text-green-600"></span><span>${q}</span></li>`).join('')}
             </ul>
           </div>
         </div>
 
         <!-- Action Items -->
         <div class="mb-4">
-          <h4 class="font-medium mb-2 text-gray-700">âœ… Action Items & Next Steps</h4>
+          <h4 class="font-medium mb-2 text-gray-700">Action Items & Next Steps</h4>
           <div class="bg-yellow-50 p-3 rounded border text-sm">
             <ul class="space-y-1">
-              ${analysisData.actionItems.map(item => `<li class="flex items-start gap-2"><span class="text-yellow-600">â€¢</span><span>${item}</span></li>`).join('')}
+              ${analysisData.actionItems.map(item => `<li class="flex items-start gap-2"><span class="text-yellow-600"></span><span>${item}</span></li>`).join('')}
             </ul>
           </div>
         </div>
@@ -709,7 +709,7 @@
       let compiledAnalysis = '\n=== AI ANALYSIS SUMMARY ===\n\n';
       
       // Overall summary section
-      compiledAnalysis += '📅‹ VISIT SUMMARIES:\n';
+      compiledAnalysis += 'VISIT SUMMARIES:\n';
       allAnalyses.forEach((analysis, index) => {
         compiledAnalysis += `\nRecording ${analysis.id} (${analysis.timestamp}):\n${analysis.summary}\n`;
       });
@@ -719,32 +719,32 @@
       if (allKeyPoints.length > 0) {
         compiledAnalysis += '\nðŸ” KEY POINTS:\n';
         allKeyPoints.forEach(point => {
-          compiledAnalysis += `â€¢ ${point}\n`;
+          compiledAnalysis += ` ${point}\n`;
         });
       }
       
       // All follow-up questions
-      compiledAnalysis += '\n📅FOLLOW-UP QUESTIONS TO ASK:\n';
+      compiledAnalysis += '\nFOLLOW-UP QUESTIONS TO ASK:\n';
       allAnalyses.forEach((analysis, index) => {
         if (analysis.questions.length > 0) {
           analysis.questions.forEach(q => {
-            compiledAnalysis += `â€¢ ${q}\n`;
+            compiledAnalysis += ` ${q}\n`;
           });
         }
       });
       
       // All action items
-      compiledAnalysis += '\nâœ… ACTION ITEMS & NEXT STEPS:\n';
+      compiledAnalysis += '\nACTION ITEMS & NEXT STEPS:\n';
       allAnalyses.forEach((analysis, index) => {
         if (analysis.actionItems.length > 0) {
           analysis.actionItems.forEach(item => {
-            compiledAnalysis += `â€¢ ${item}\n`;
+            compiledAnalysis += ` ${item}\n`;
           });
         }
       });
       
       // Full transcripts section
-      compiledAnalysis += '\n📅 FULL TRANSCRIPTS:\n';
+      compiledAnalysis += '\nFULL TRANSCRIPTS:\n';
       allAnalyses.forEach((analysis, index) => {
         compiledAnalysis += `\n--- Recording ${analysis.id} Transcript ---\n${analysis.transcript}\n`;
       });
@@ -1070,7 +1070,7 @@
   
   function showInstallButton() {
     // You can create a custom install button here
-    console.log('ðŸ📅± App can be installed!');
+    console.log('App can be installed!');
   }
   
   window.addEventListener('appinstalled', (evt) => {
